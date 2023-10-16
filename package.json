@@ -20,6 +20,7 @@
 	    "html",
 	    "markdown",
 	    "javascript",
-	    "pwa"
+	    "pwa",
+	    "rss"
   ],
 }
