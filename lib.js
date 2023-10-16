@@ -25,13 +25,13 @@ export function Gondola(dir) {
 				'node_modules',
 				'package.json',
 				'bun.lockb',
-				'ornithopter.js',
+				'gondola.js',
 				'package-lock.json'
 			],
 			data: '_data'
 		};
 
-		const {default: defaultFunc} = await import(path.resolve(dir, 'ornithopter.js'))
+		const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
 		const user_settings = defaultFunc();
 
 		let joined_settings = {};
