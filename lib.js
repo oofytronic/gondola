@@ -436,6 +436,12 @@ export function Gondola(dir) {
 			`;
 		}
 
+		template = template
+		    .split('\n')           // Split by newline
+		    .map(line => line.trim()) // Trim each line
+		    .filter(line => line)  // Remove empty lines
+		    .join('\n');           // Join the lines back together
+
 		const destination = `${settings.output}/feed.xml`;
 		const dest_dir = path.parse(destination).dir;
 		fs.mkdirSync(dest_dir, {recursive: true})
