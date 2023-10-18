@@ -41,6 +41,6 @@ export default function home(data, collections) {
 }
 ```
 
-All js templates are structured this way. Export a 'config' function that tells Gondola what to do with the template. Export a 'default' function that represents your template. Gondola will create a contents key with your template.
+All JS templates are structured this way. Export a "config" function that tells Gondola what to do with the template. You can think of this as the frontmatter for your template. Export a "default" function that represents your template. Gondola will create a contents key with your template.
 
-4. Run bun ornithopter. By default a '\_site' folder will be created with an index.html file containing your template as html. You can upload the '\_site' to your hosting platform.
+4. Run "bun gondola". By default a '\_site' folder will be created with an index.html file containing your template as html. You can upload the '\_site' to your hosting platform.
