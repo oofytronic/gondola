@@ -394,7 +394,6 @@ export function Gondola(dir) {
 	}
 
 	// PARTIALS
-
 	function setSyndication(settings, config, feed) {
 
 		// LOOK FOR TYPE: RSS, Atom, JSONfeed
@@ -486,7 +485,6 @@ export function Gondola(dir) {
 	}
 
 	// BUILD
-
 	async function build() {
 		const start = new Date().getTime();
 		const settings = Object.freeze(await getSettings());

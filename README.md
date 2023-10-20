@@ -1,6 +1,8 @@
 # Gondola
 Gondola is a speedy static site generator and content engine for various web content structures. It can be used to create websites and Progressive Web Apps as well as web related content (books, documentation, podcasts, music, etc).
 
+***Gondola is in alpha and should not be used in production***
+
 ## Overview
 - Gondola is written in Javascript.
 - Gondola uses Javascript functions and template literals as the templating system for webpages, components, and whatever else you can think of. It's all Javascript.
@@ -17,7 +19,9 @@ bun install  git@github.com:oofytronic/gondola --save-dev
 Coming Soon!
 
 ## Quick Start
-coming soon...
+Coming soon...
+
+## Example: Template Page
 
 ```js
 export function config() {
