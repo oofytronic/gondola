@@ -287,6 +287,7 @@ export function Gondola(dir) {
 								type: 'page',
 								state: set.state,
 								layout: set.layout,
+								meta: set.meta,
 								data: arr,
 								hrefs: sortedHrefs,
 								href: params
