@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { serve as bunServe } from 'bun';
+import { watch } from 'bun:fs';
+
 import {marked} from 'marked';
 import * as yaml_front from "yaml-front-matter";
 
@@ -15,45 +18,49 @@ export function Gondola(dir) {
 	}
 
 	async function getSettings() {
-		let default_settings = {
-			starter: '',
-			output: '_site',
-			includes: '_includes',
-			drafts: '_drafts',
-			ignore: [
-				'.git',
-				'node_modules',
-				'package.json',
-				'bun.lockb',
-				'gondola.js',
-				'package-lock.json'
-			],
-			data: '_data'
-		};
+		try {
+			let default_settings = {
+				starter: '',
+				output: '_site',
+				includes: '_includes',
+				drafts: '_drafts',
+				ignore: [
+					'.git',
+					'node_modules',
+					'package.json',
+					'bun.lockb',
+					'gondola.js',
+					'package-lock.json'
+				],
+				data: '_data'
+			};
 
-		const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
-		const user_settings = defaultFunc();
+			const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
+			const user_settings = defaultFunc();
 
-		let joined_settings = {};
+			let joined_settings = {};
 
-		Object.entries(user_settings).forEach(([key, value]) => {
-			if (Array.isArray(value)) {
-				const default_array = Object.entries(default_settings);
-				const match = default_array.find(([default_key, default_value]) => {
-					return default_key === key
-				})
+			Object.entries(user_settings).forEach(([key, value]) => {
+				if (Array.isArray(value)) {
+					const default_array = Object.entries(default_settings);
+					const match = default_array.find(([default_key, default_value]) => {
+						return default_key === key
+					})
 
-				if (match !== undefined) {
-					joined_settings[key] = [...match[1], ...value]
+					if (match !== undefined) {
+						joined_settings[key] = [...match[1], ...value]
+					} else {
+						joined_settings[key] = value
+					}
 				} else {
 					joined_settings[key] = value
 				}
-			} else {
-				joined_settings[key] = value
-			}
-		})
+			})
 
-		return {...default_settings, ...joined_settings};
+			return {...default_settings, ...joined_settings};
+		} catch (error) {
+			console.error(`Error getting Settings from gondola.js:`, error);
+		}
 	}
 
 	async function getFiles(settings, dir) {
@@ -394,7 +401,7 @@ export function Gondola(dir) {
 		});
 	}
 
-	// PARTIALS
+	// TOOLS
 	function setSyndication(settings, config, feed) {
 
 		// LOOK FOR TYPE: RSS, Atom, JSONfeed
@@ -486,7 +493,7 @@ export function Gondola(dir) {
 	}
 
 	// BUILD
-	async function build() {
+	async function gen() {
 		const start = new Date().getTime();
 		const settings = Object.freeze(await getSettings());
 		const output = settings.output;
@@ -539,7 +546,44 @@ export function Gondola(dir) {
 		console.log(`Built in ${total_time} seconds`);
 	}
 
+	function serve(port, publicDir) {
+	    // Function to handle incoming requests and serve static files
+	    async function handleRequest(req) {
+	        try {
+	            const url = req.url === '/' ? '/index.html' : req.url; // Default to index.html if root
+	            const filePath = `${publicDir}${url}`;
+	            return await Bun.file(filePath);
+	        } catch (error) {
+	            console.error(`Error serving ${req.url}:`, error);
+	            return new Response('File not found', { status: 404 });
+	        }
+	    }
+
+	    // Start the server
+	    bunServe({
+	        fetch: handleRequest,
+	        port: port
+	    });
+
+	    console.log(`Server running on http://localhost:${port}`);
+
+	    // Function to reload the browser when files change
+	    function reloadBrowser() {
+	        // Logic to send a message to the browser to reload.
+	        // This usually involves WebSocket communication.
+	        // Implement WebSocket server and client communication here.
+	    }
+
+	    // Watch for file changes in the public directory
+	    watch(publicDir, { recursive: true }, (eventType, filename) => {
+	        console.log(`File changed: ${filename}`);
+	        reloadBrowser();
+	    });
+	}
+
+
 	return {
-		build: build
+		gen: gen,
+		serve: serve
 	}
 }
