@@ -16,12 +16,12 @@ async function main() {
     const args = parseArgs();
 
     if (args.serve) {
-        // Extract additional options if needed
-        const port = 3000;  // Default port, you can make this configurable
-        Gondola('./').gen();
-        Gondola('./').serve(port);
+		// Extract additional options if needed
+		const port = 3000;  // Default port, you can make this configurable
+		await Gondola('./').gen();
+		await Gondola('./').serve(port);
     } else {
-    	Gondola('./').gen();
+    	await Gondola('./').gen();
     }
 
     // Add more conditions for other commands

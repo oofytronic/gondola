@@ -552,15 +552,45 @@ export function Gondola(dir) {
 		const publicDir = settings.output;
 	    // Function to handle incoming requests and serve static files
 	    async function handleRequest(req) {
-	        try {
-	            const url = req.url === '/' ? '/index.html' : req.url; // Default to index.html if root
-	            const filePath = `${publicDir}${url}`;
-	            return await Bun.file(filePath);
-	        } catch (error) {
-	            console.error(`Error serving ${req.url}:`, error);
-	            return new Response('File not found', { status: 404 });
-	        }
-	    }
+		    try {
+		        const url = req.url === '/' ? '/index.html' : req.url;
+		        const filePath = `${publicDir}${url}`;
+		        const file = await Bun.file(filePath);
+
+		        // Check if the file is an HTML file
+		        if (filePath.endsWith('.html')) {
+		            let content = await file.text();
+		            const wsPort = port + 1;  // WebSocket server port
+
+		            // Script to be injected
+		            const script = `
+		                <script>
+		                    (function() {
+		                        const ws = new WebSocket('ws://localhost:${wsPort}');
+		                        ws.onmessage = function(event) {
+		                            if (event.data === 'reload') {
+		                                window.location.reload();
+		                            }
+		                        };
+		                    })();
+		                </script>
+		            `;
+
+		            // Inject the script just before the closing </body> tag
+		            content = content.replace('</body>', `${script}</body>`);
+
+		            return new Response(content, {
+		                headers: { 'Content-Type': 'text/html' }
+		            });
+		        }
+
+		        return file;
+		    } catch (error) {
+		        console.error(`Error serving ${req.url}:`, error);
+		        return new Response('File not found', { status: 404 });
+		    }
+		}
+
 
 	    // Start the server
 	    bunServe({
