@@ -1,6 +1,6 @@
 {
 	"name": "gondola",
-	"version": "0.0.13",
+	"version": "0.0.15",
 	"bin": {
 		"gondola": "main.js"
 	},

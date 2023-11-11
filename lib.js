@@ -1,11 +1,15 @@
+// NODE
 import * as fs from 'fs';
 import * as path from 'path';
 
+// BUN
 import { serve as bunServe } from 'bun';
 import { watch } from 'bun:fs';
 
+// EXTERNAL
 import {marked} from 'marked';
 import * as yaml_front from "yaml-front-matter";
+
 
 export function Gondola(dir) {
 
@@ -98,21 +102,40 @@ export function Gondola(dir) {
 						}
 
 						if (ext === "js") {
-							const {config: configFunc} = await import(origin)
+							try {
+								const {config: configFunc} = await import(origin)
+							} catch {
+								console.error(`ERROR finding or using function config() at ${origin}`, error)
+							}
 
 							obj = {...obj, ...configFunc()};
 						}
 
 						if (ext === "md") {
-							const template_obj = yaml_front.loadFront(await Bun.file(origin).text());
+							try {
+								const template_obj = yaml_front.loadFront(await Bun.file(origin).text());
+							} catch {
+								console.error(`ERROR parsing YAML front matter at ${origin}`, error);
+							}
+
 							template_obj.contents = marked.parse(template_obj.__content);
 							delete template_obj.__content;
 							obj = {...obj, ...template_obj};
 						}
 
 						if (ext === "json") {
-							const data_string = await Bun.file(obj.path).text();
-							const data_obj = JSON.parse(data_string);
+							try {
+								const data_string = await Bun.file(obj.path).text();
+							} catch {
+								console.error(`Error getting text from ${obj.path}.`, error)
+							}
+
+							try {
+								const data_obj = JSON.parse(data_string);
+							} catch {
+								console.error(`Error parsing JSON from ${obj.path}`, error)
+							}
+
 							obj.data = data_obj;
 						}
 
@@ -150,7 +173,7 @@ export function Gondola(dir) {
 	function setCollections({settings, files, data} = {}) {
 		let collections = {};
 
-		// Create collections group from files
+		// COLLECTION FROM FILES
 		files
 		.filter(file => file.collections)
 		.map(file => {
@@ -165,199 +188,209 @@ export function Gondola(dir) {
 
 			function collectionFromArray(arr) {
 				arr.forEach(tag => {
-					pushToCollections(tag)
+					try {
+						pushToCollections(tag);
+					} catch {
+						console.error(`ERROR adding file to ${tag} collection:`, error);
+					}
 				});
 			}
 
 			Array.isArray(file.collections) ? collectionFromArray(file.collections)
 			: typeof file.collections === 'string' ? pushToCollections(file.collections)
-			: console.warn(`Your Collection needs to be a "string" or an "Array"`)
+			: console.error(`"collections:" needs to be a "String" or an "Array"`)
 		});
 
-		// FROM SETTINGS
-		settings.collect.map(collection => {
-			function runAction(set) {
-				// Results to Files
-				function paginate(set) {
-					let paginated_files;
+		// COLLECTION FROM SETTINGS
+		if (settings.collect) {
+			if (Array.isArray(settings.collect)) {
+				settings.collect.map(collection => {
+					function runAction(set) {
+						// Results to Files
+						function paginate(set) {
+							let paginated_files;
 
-					Object.entries(collections).map(([key, value]) => {
-						if (key === set.name) {
-							paginated_files = collections[key];
-						}
-					});
-
-					let modified_files = paginated_files.map(file => {
-						const slug = decipherSlug(file, set.slug);
-						file.path = path.join(`${set.path}/${slug}`);
-						file.state = !file.state ? set.state : file.state;
-						file.layout = !file.layout ? set.layout : file.layout;
-						return file;
-					})
-
-					if (set.size) {
-						// DEFAULTS
-						let iterateWith;
-						let startAt;
-
-						set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
-						set.startAt ? startAt = set.startAt : startAt = '';
-
-						function chunkArray(arr, size) {
-							return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
-							: [arr];
-						}
-
-						if (set.sort) {
-							modified_files = modified_files.map(file => {
-								if (set.sort.by === "date" || !set.sort.by) {
-									if (set.sort.format === "mmddyyyy" || !set.sort.format) {
-										const dateParts = file.date.split(/-|\//); // - OR /
-										
-										const month = parseInt(dateParts[0], 10) - 1;
-										const day = parseInt(dateParts[1], 10);
-										const year = parseInt(dateParts[2], 10);
-										file.date = new Date(year, month, day);
-									}
+							Object.entries(collections).map(([key, value]) => {
+								if (key === set.name) {
+									paginated_files = collections[key];
 								}
-								
+							});
+
+							let modified_files = paginated_files.map(file => {
+								const slug = decipherSlug(file, set.slug);
+								file.path = path.join(`${set.path}/${slug}`);
+								file.state = !file.state ? set.state : file.state;
+								file.layout = !file.layout ? set.layout : file.layout;
 								return file;
 							})
 
-							if (set.sort.order === "newest" || !set.sort.order) {
-								modified_files = modified_files.toSorted((a, b) => b.date.getTime() - a.date.getTime());
-							}
+							if (set.size) {
+								// DEFAULTS
+								let iterateWith;
+								let startAt;
 
-							if (set.sort.order === "oldest") {
-								modified_files = modified_files.toSorted((a, b) => a.date.getTime() - b.date.getTime());
-							}
-						}
+								set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
+								set.startAt ? startAt = set.startAt : startAt = '';
 
-						const chunked_data = chunkArray(modified_files, set.size);
+								function chunkArray(arr, size) {
+									return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
+									: [arr];
+								}
 
-						const new_pages = chunked_data.map(arr => {
-							const position = chunked_data.indexOf(arr);
-							const dirPath = set.path;
+								if (set.sort) {
+									modified_files = modified_files.map(file => {
+										if (set.sort.by === "date" || !set.sort.by) {
+											if (set.sort.format === "mmddyyyy" || !set.sort.format) {
+												const dateParts = file.date.split(/-|\//); // - OR /
+												
+												const month = parseInt(dateParts[0], 10) - 1;
+												const day = parseInt(dateParts[1], 10);
+												const year = parseInt(dateParts[2], 10);
+												file.date = new Date(year, month, day);
+											}
+										}
+										
+										return file;
+									})
 
-							// Get page path
-							let pagePath;
-							position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
+									if (set.sort.order === "newest" || !set.sort.order) {
+										modified_files = modified_files.toSorted((a, b) => b.date.getTime() - a.date.getTime());
+									}
 
-							// create hrefs
-							let n = chunked_data.length - 1;
-							
-							const hrefs = [];
-							
-							function iterate(n){
-								if (n !== 0) {
-									hrefs.push(`${dirPath}/${n}`);
-									n = n-1;
+									if (set.sort.order === "oldest") {
+										modified_files = modified_files.toSorted((a, b) => a.date.getTime() - b.date.getTime());
+									}
+								}
+
+								const chunked_data = chunkArray(modified_files, set.size);
+
+								const new_pages = chunked_data.map(arr => {
+									const position = chunked_data.indexOf(arr);
+									const dirPath = set.path;
+
+									// Get page path
+									let pagePath;
+									position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
+
+									// create hrefs
+									let n = chunked_data.length - 1;
+									
+									const hrefs = [];
+									
+									function iterate(n){
+										if (n !== 0) {
+											hrefs.push(`${dirPath}/${n}`);
+											n = n-1;
+											iterate(n);
+										} else {
+											hrefs.push(`${dirPath}`);
+											return
+										}
+									}
+									
 									iterate(n);
+									
+									const sortedHrefs = hrefs.sort();
+
+									const lastItem = n;
+									let params = {}
+									if (position !== 0 && position !== lastItem) {
+										params = {
+											next: `${dirPath}/${position + 1}`,
+											previous: `${dirPath}/${position - 1}`,
+											first: `${dirPath}`,
+											last: `${dirPath}/${lastItem}`,
+										}
+									} else if (position === 0) {
+										params = {
+											next: `${dirPath}/${position + 1}`,
+											previous: undefined,
+											first: undefined,
+											last: `${dirPath}/${lastItem}`,
+										}
+									} else if (position === lastItem) {
+										params = {
+											next: undefined,
+											previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
+											first: `${dirPath}`,
+											last: undefined,
+										}
+									}
+
+									const new_page = {
+										name: pagePath,
+										path: pagePath,
+										type: 'page',
+										state: set.state,
+										layout: set.layout,
+										meta: set.meta,
+										data: arr,
+										hrefs: sortedHrefs,
+										href: params
+									}
+
+									return new_page;
+								});
+
+								return new_pages;
+							} else {
+								return modified_files
+							}
+						}
+
+						// Results to collections
+						function organize(set) {
+						}
+
+						// Use files colllection as base
+						function remedyFiles(array1, array2) {
+
+							const new_objs = [];
+
+							const updated_files = array1.map(obj1 => {
+								const matching_obj = array2.find(obj2 => obj1.name === obj2.name);
+
+								if (matching_obj) {
+									new_objs.push(matching_obj);
 								} else {
-									hrefs.push(`${dirPath}`);
+									new_objs.push(obj1)
+								}
+							});
+
+							array2.map(obj2 => {
+								const matching_obj = new_objs.find(obj3 => obj3.name === obj2.name);
+
+								if (matching_obj) {
 									return
+								} else {
+									new_objs.push(obj2)
 								}
-							}
-							
-							iterate(n);
-							
-							const sortedHrefs = hrefs.sort();
+							})
 
-							const lastItem = n;
-							let params = {}
-							if (position !== 0 && position !== lastItem) {
-								params = {
-									next: `${dirPath}/${position + 1}`,
-									previous: `${dirPath}/${position - 1}`,
-									first: `${dirPath}`,
-									last: `${dirPath}/${lastItem}`,
-								}
-							} else if (position === 0) {
-								params = {
-									next: `${dirPath}/${position + 1}`,
-									previous: undefined,
-									first: undefined,
-									last: `${dirPath}/${lastItem}`,
-								}
-							} else if (position === lastItem) {
-								params = {
-									next: undefined,
-									previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
-									first: `${dirPath}`,
-									last: undefined,
-								}
-							}
+							return new_objs;
+						}
 
-							const new_page = {
-								name: pagePath,
-								path: pagePath,
-								type: 'page',
-								state: set.state,
-								layout: set.layout,
-								meta: set.meta,
-								data: arr,
-								hrefs: sortedHrefs,
-								href: params
-							}
-
-							return new_page;
-						});
-
-						return new_pages;
-					} else {
-						return modified_files
+						set.action === "paginate" ? files = remedyFiles(files, paginate(set))
+						: set.action === "organize" ? organize(set)
+						: console.error(`There is no function for "${set.action}". You can create one and pass it through in your settings with "use". Default actions offered by Gondola are: [paginate, organize(coming soon)]`);
 					}
-				}
 
-				// Results to collections
-				function organize(set) {
-				}
+					function runActions(obj) {
+						const list = obj.actions;
+						list.map(set => {
+							set.name = obj.name;
+							runAction(set);
+						})
+					}
 
-				function remedyFiles(array1, array2) {
-
-					const new_objs = [];
-
-					const updated_files = array1.map(obj1 => {
-						const matching_obj = array2.find(obj2 => obj1.name === obj2.name);
-
-						if (matching_obj) {
-							new_objs.push(matching_obj);
-						} else {
-							new_objs.push(obj1)
-						}
-					});
-
-					array2.map(obj2 => {
-						const matching_obj = new_objs.find(obj3 => obj3.name === obj2.name);
-
-						if (matching_obj) {
-							return
-						} else {
-							new_objs.push(obj2)
-						}
-					})
-
-					return new_objs;
-				}
-
-
-				set.action === "paginate" ? files = remedyFiles(files, paginate(set))
-				: set.action === "organize" ? organize(set)
-				: console.error(`There is no function for "${set.action}". You can create one and pass it through in your settings with "use".`)
-			}
-
-			function runActions(obj) {
-				const list = obj.actions;
-				list.map(set => {
-					set.name = obj.name;
-					runAction(set);
+					collection.action ? runAction(collection)
+					: collection.actions ? runActions(collection)
+					: console.error(`Your collection "${collection.name}" needs at least one action attached to it.`)
 				})
+			} else if (typeof settings.collect === 'string') {
+				console.error(`ERROR: "collect:" should be an array []:` error);
 			}
-
-			collection.action ? runAction(collection)
-			: collection.actions ? runActions(collection)
-			: console.error(`Your collection "${collection.name}" needs at least one action attached to it.`)
-		})
+		}
 
 		return {settings, files, data, collections}
 	}
@@ -365,15 +398,30 @@ export function Gondola(dir) {
 	function setTemplates({settings, files, data, collections} = {}) {
 		return Promise.all(files.map(async obj => {
 				if (obj.ext === "js") {
-					const {default: defaultFunc} = await import(obj.origin);
+					try {
+						const {default: defaultFunc} = await import(obj.origin);
+					} catch {
+						console.error(`ERROR importing default function at ${obj.origin}:`, error);
+					}
+
 					obj.contents = defaultFunc(data, collections);
 					obj.type ? obj.type = obj.type : obj.type = 'page';
 				}
 
 
 				if (obj.ext === "md") {
-					const template_obj = yaml_front.loadFront(await Bun.file(obj.origin).text());
-					template_obj.contents = marked.parse(template_obj.__content);
+					try {
+						const template_obj = yaml_front.loadFront(await Bun.file(obj.origin).text());
+					} catch {
+						console.error(`ERROR parsing YAML front matter:`, error);
+					}
+
+					try {
+						template_obj.contents = marked.parse(template_obj.__content);
+					} catch {
+						console.error(`ERROR parsing Markdown:`, error);
+					}
+
 					delete template_obj.__content;
 					obj = {...obj, ...template_obj};
 					obj.type ? obj.type = obj.type : obj.type = 'page';
@@ -390,7 +438,13 @@ export function Gondola(dir) {
 		return Promise.all(files.map(async obj => {
 				if (obj.layout) {
 					const full_path = path.resolve(dir, obj.layout)
-					const {default: defaultFunc} = await import(full_path);
+
+					try {
+						const {default: defaultFunc} = await import(full_path);
+					} catch {
+						console.error(`ERROR importing default function at ${full_path}:`, error);
+					}
+
 					obj.contents = defaultFunc(data, collections, obj)
 				}
 
@@ -508,7 +562,11 @@ export function Gondola(dir) {
 
 		// PLUGINS
 		if (settings.use) {
-			use(tree, settings);
+			try {
+				use(tree, settings);
+			} catch {
+				console.error(`ERROR using tool:`, error);
+			}
 		}
 
 		// FILES
@@ -537,7 +595,11 @@ export function Gondola(dir) {
 
 		// PASS
 		if (settings.pass) {
-			pass(settings);
+			try {
+				pass(settings);
+			} catch {
+				console.error(`ERROR passing over files and/or directories in settings:`, error);
+			}
 		}
 
 		// END
@@ -631,74 +693,6 @@ export function Gondola(dir) {
 	        reloadBrowser();
 	    });
 	}
-
-
-
-	// async function serve(port) {
-	// 	const settings = Object.freeze(await getSettings());
-	// 	const publicDir = settings.output;
-	//     // Function to handle incoming requests and serve static files
-	//     async function handleRequest(req) {
-	// 	    try {
-	// 	        const url = req.url === '/' ? '/index.html' : req.url;
-	// 	        const filePath = `${publicDir}${url}`;
-	// 	        const file = await Bun.file(filePath);
-
-	// 	        // Check if the file is an HTML file
-	// 	        if (filePath.endsWith('.html')) {
-	// 	            let content = await file.text();
-	// 	            const wsPort = port + 1;  // WebSocket server port
-
-	// 	            // Script to be injected
-	// 	            const script = `
-	// 	                <script>
-	// 	                    (function() {
-	// 	                        const ws = new WebSocket('ws://localhost:${wsPort}');
-	// 	                        ws.onmessage = function(event) {
-	// 	                            if (event.data === 'reload') {
-	// 	                                window.location.reload();
-	// 	                            }
-	// 	                        };
-	// 	                    })();
-	// 	                </script>
-	// 	            `;
-
-	// 	            // Inject the script just before the closing </body> tag
-	// 	            content = content.replace('</body>', `${script}</body>`);
-
-	// 	            return new Response(content, {
-	// 	                headers: { 'Content-Type': 'text/html' }
-	// 	            });
-	// 	        }
-
-	// 	        return file;
-	// 	    } catch (error) {
-	// 	        console.error(`Error serving ${req.url}:`, error);
-	// 	        return new Response('File not found', { status: 404 });
-	// 	    }
-	// 	}
-
-	//     // Start the server
-	//     bunServe({
-	//         fetch: handleRequest,
-	//         port: port
-	//     });
-
-	//     console.log(`Server running on http://localhost:${port}`);
-
-	//     // Function to reload the browser when files change
-	//     function reloadBrowser() {
-	//         // Logic to send a message to the browser to reload.
-	//         // This usually involves WebSocket communication.
-	//         // Implement WebSocket server and client communication here.
-	//     }
-
-	//     // Watch for file changes in the public directory
-	//     watch(publicDir, { recursive: true }, (eventType, filename) => {
-	//         console.log(`File changed: ${filename}`);
-	//         reloadBrowser();
-	//     });
-	// }
 
 
 	return {
