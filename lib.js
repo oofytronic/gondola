@@ -546,7 +546,9 @@ export function Gondola(dir) {
 		console.log(`Built in ${total_time} seconds`);
 	}
 
+	// SERVE
 	function serve(port) {
+		const settings = Object.freeze(await getSettings());
 		const publicDir = settings.output;
 	    // Function to handle incoming requests and serve static files
 	    async function handleRequest(req) {
