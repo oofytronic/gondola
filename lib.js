@@ -13,12 +13,42 @@ import * as yaml_front from "yaml-front-matter";
 
 export function Gondola(dir) {
 
+	// function decipherSlug(data, line) {
+	// 	// let location;
+	// 	// line.location.includes('::') ? location = line.substring(0, line.indexOf('::')) : location = undefined;
+	// 	const slug_params = line.split('--');
+	// 	const slug = slug_params.map(param => data[param].replaceAll(' ', '-').replaceAll('.', '').replaceAll('&', 'and').replaceAll(':', '').toLowerCase()).join('-');
+	// 	return slug;
+	// }
+
 	function decipherSlug(data, line) {
-		// let location;
-		// line.location.includes('::') ? location = line.substring(0, line.indexOf('::')) : location = undefined;
-		const slug_params = line.split('--');
-		const slug = slug_params.map(param => data[param].replaceAll(' ', '-').replaceAll('.', '').replaceAll('&', 'and').replaceAll(':', '').toLowerCase()).join('-');
-		return slug;
+		const slugParams = line.split('--');
+		const slug = slugParams.map(param => {
+			// Check if data for the parameter exists and is a string
+			if (typeof data[param] === 'string') {
+				try {
+					// Replace spaces, periods, ampersands, and colons with URL-friendly characters
+					return data[param]
+						return data[param]
+							.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+							.replace(/[^a-zA-Z0-9- ]/g, '') // Remove special characters except hyphens and spaces
+							.replace(/\s+/g, '-') // Replace spaces with hyphens
+							.replace(/-+/g, '-') // Replace multiple hyphens with a single one
+							.trim() // Trim leading and trailing spaces
+							.toLowerCase(); // Convert to lowercase
+				} catch {
+					console.error(`ERROR: Could not use ${param} at ${line}`);
+				}
+			} else {
+				console.error(`ERROR: ${data[param]} is not a 'string' at ${line}`);
+			}
+
+			return '';
+			
+		}).join('-');
+
+		// Encode the slug to ensure it's a valid URL component
+		return encodeURIComponent(slug);
 	}
 
 	async function getSettings() {
