@@ -548,64 +548,82 @@ export function Gondola(dir) {
 
 	// SERVE
 	async function serve(port) {
-		const settings = Object.freeze(await getSettings());
-		const publicDir = settings.output;
-	    // Function to handle incoming requests and serve static files
-	    async function handleRequest(req) {
-		    try {
-		        const url = req.url === '/' ? '/index.html' : req.url;
-		        const filePath = `${publicDir}${url}`;
-		        const file = await Bun.file(filePath);
+	    const settings = Object.freeze(await getSettings());
+	    const publicDir = settings.output;
 
-		        // Check if the file is an HTML file
-		        if (filePath.endsWith('.html')) {
-		            let content = await file.text();
-		            const wsPort = port + 1;  // WebSocket server port
+	    // Array to hold connected WebSocket clients
+	    let wsClients = [];
 
-		            // Script to be injected
-		            const script = `
-		                <script>
-		                    (function() {
-		                        const ws = new WebSocket('ws://localhost:${wsPort}');
-		                        ws.onmessage = function(event) {
-		                            if (event.data === 'reload') {
-		                                window.location.reload();
-		                            }
-		                        };
-		                    })();
-		                </script>
-		            `;
-
-		            // Inject the script just before the closing </body> tag
-		            content = content.replace('</body>', `${script}</body>`);
-
-		            return new Response(content, {
-		                headers: { 'Content-Type': 'text/html' }
-		            });
-		        }
-
-		        return file;
-		    } catch (error) {
-		        console.error(`Error serving ${req.url}:`, error);
-		        return new Response('File not found', { status: 404 });
-		    }
-		}
-
-
-	    // Start the server
-	    bunServe({
-	        fetch: handleRequest,
-	        port: port
-	    });
-
-	    console.log(`Server running on http://localhost:${port}`);
+	    // Function to handle WebSocket connections
+	    function handleWebSocket(socket) {
+	        wsClients.push(socket);
+	        socket.addEventListener('close', () => {
+	            wsClients = wsClients.filter(client => client !== socket);
+	        });
+	    }
 
 	    // Function to reload the browser when files change
 	    function reloadBrowser() {
-	        // Logic to send a message to the browser to reload.
-	        // This usually involves WebSocket communication.
-	        // Implement WebSocket server and client communication here.
+	        wsClients.forEach(client => {
+	            if (client.readyState === WebSocket.OPEN) {
+	                client.send('reload');
+	            }
+	        });
 	    }
+
+	    // Function to handle incoming HTTP requests and serve static files
+	    async function handleRequest(req) {
+	        try {
+	            const url = req.url === '/' ? '/index.html' : req.url;
+	            const filePath = `${publicDir}${url}`;
+	            const file = await Bun.file(filePath);
+
+	            if (filePath.endsWith('.html')) {
+	                let content = await file.text();
+
+	                // Script to be injected
+	                const script = `
+	                    <script>
+	                        (function() {
+	                            const ws = new WebSocket('ws://localhost:${port}');
+	                            ws.onmessage = function(event) {
+	                                if (event.data === 'reload') {
+	                                    window.location.reload();
+	                                }
+	                            };
+	                        })();
+	                    </script>
+	                `;
+
+	                // Inject the script just before the closing </body> tag
+	                content = content.replace('</body>', `${script}</body>`);
+
+	                return new Response(content, {
+	                    headers: { 'Content-Type': 'text/html' }
+	                });
+	            }
+
+	            return file;
+	        } catch (error) {
+	            console.error(`Error serving ${req.url}:`, error);
+	            return new Response('File not found', { status: 404 });
+	        }
+	    }
+
+	    // Start the server with both HTTP and WebSocket support
+	    bunServe({
+	        fetch: handleRequest,
+	        port: port,
+	        upgrade: (req, socket) => {
+	            if (req.headers.get('Upgrade') === 'websocket') {
+	                handleWebSocket(socket);
+	            } else {
+	                socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+	            }
+	        }
+	    });
+
+	    console.log(`Server running on http://localhost:${port}`);
 
 	    // Watch for file changes in the public directory
 	    watch(publicDir, { recursive: true }, (eventType, filename) => {
@@ -613,6 +631,74 @@ export function Gondola(dir) {
 	        reloadBrowser();
 	    });
 	}
+
+
+
+	// async function serve(port) {
+	// 	const settings = Object.freeze(await getSettings());
+	// 	const publicDir = settings.output;
+	//     // Function to handle incoming requests and serve static files
+	//     async function handleRequest(req) {
+	// 	    try {
+	// 	        const url = req.url === '/' ? '/index.html' : req.url;
+	// 	        const filePath = `${publicDir}${url}`;
+	// 	        const file = await Bun.file(filePath);
+
+	// 	        // Check if the file is an HTML file
+	// 	        if (filePath.endsWith('.html')) {
+	// 	            let content = await file.text();
+	// 	            const wsPort = port + 1;  // WebSocket server port
+
+	// 	            // Script to be injected
+	// 	            const script = `
+	// 	                <script>
+	// 	                    (function() {
+	// 	                        const ws = new WebSocket('ws://localhost:${wsPort}');
+	// 	                        ws.onmessage = function(event) {
+	// 	                            if (event.data === 'reload') {
+	// 	                                window.location.reload();
+	// 	                            }
+	// 	                        };
+	// 	                    })();
+	// 	                </script>
+	// 	            `;
+
+	// 	            // Inject the script just before the closing </body> tag
+	// 	            content = content.replace('</body>', `${script}</body>`);
+
+	// 	            return new Response(content, {
+	// 	                headers: { 'Content-Type': 'text/html' }
+	// 	            });
+	// 	        }
+
+	// 	        return file;
+	// 	    } catch (error) {
+	// 	        console.error(`Error serving ${req.url}:`, error);
+	// 	        return new Response('File not found', { status: 404 });
+	// 	    }
+	// 	}
+
+	//     // Start the server
+	//     bunServe({
+	//         fetch: handleRequest,
+	//         port: port
+	//     });
+
+	//     console.log(`Server running on http://localhost:${port}`);
+
+	//     // Function to reload the browser when files change
+	//     function reloadBrowser() {
+	//         // Logic to send a message to the browser to reload.
+	//         // This usually involves WebSocket communication.
+	//         // Implement WebSocket server and client communication here.
+	//     }
+
+	//     // Watch for file changes in the public directory
+	//     watch(publicDir, { recursive: true }, (eventType, filename) => {
+	//         console.log(`File changed: ${filename}`);
+	//         reloadBrowser();
+	//     });
+	// }
 
 
 	return {
