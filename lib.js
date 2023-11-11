@@ -36,11 +36,18 @@ export function Gondola(dir) {
 					'gondola.js',
 					'package-lock.json'
 				],
+				pass: [],
 				data: '_data'
 			};
 
-			const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
-			const user_settings = defaultFunc();
+			let user_settings
+
+			if (fs.existsSync(path.resolve(dir, 'gondola.js'))) {
+				const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
+				user_settings = defaultFunc();
+			} else {
+				user_settings = {};
+			}
 
 			let joined_settings = {};
 
@@ -104,23 +111,26 @@ export function Gondola(dir) {
 						if (ext === "js") {
 							try {
 								const {config: configFunc} = await import(origin)
+								obj = {...obj, ...configFunc()};
 							} catch {
 								console.error(`ERROR finding or using function config() at ${origin}`, error)
 							}
-
-							obj = {...obj, ...configFunc()};
 						}
 
 						if (ext === "md") {
 							try {
 								const template_obj = yaml_front.loadFront(await Bun.file(origin).text());
 							} catch {
-								console.error(`ERROR parsing YAML front matter at ${origin}`, error);
+								console.error(`ERROR parsing YAML front matter at ${origin}:`, error);
 							}
 
-							template_obj.contents = marked.parse(template_obj.__content);
-							delete template_obj.__content;
-							obj = {...obj, ...template_obj};
+							try {
+								template_obj.contents = marked.parse(template_obj.__content);
+								delete template_obj.__content;
+								obj = {...obj, ...template_obj};
+							} catch {
+								console.error(`ERROR parsing Markdown at ${origin}:`, error);
+							}	
 						}
 
 						if (ext === "json") {
@@ -388,7 +398,7 @@ export function Gondola(dir) {
 					: console.error(`Your collection "${collection.name}" needs at least one action attached to it.`)
 				})
 			} else if (typeof settings.collect === 'string') {
-				console.error(`ERROR: "collect:" should be an array []:` error);
+				console.error(`ERROR: settings.collect should be an array:`, error);
 			}
 		}
 
@@ -400,12 +410,11 @@ export function Gondola(dir) {
 				if (obj.ext === "js") {
 					try {
 						const {default: defaultFunc} = await import(obj.origin);
+						obj.contents = defaultFunc(data, collections);
+						obj.type ? obj.type = obj.type : obj.type = 'page';
 					} catch {
 						console.error(`ERROR importing default function at ${obj.origin}:`, error);
 					}
-
-					obj.contents = defaultFunc(data, collections);
-					obj.type ? obj.type = obj.type : obj.type = 'page';
 				}
 
 
@@ -418,13 +427,12 @@ export function Gondola(dir) {
 
 					try {
 						template_obj.contents = marked.parse(template_obj.__content);
+						delete template_obj.__content;
+						obj = {...obj, ...template_obj};
+						obj.type ? obj.type = obj.type : obj.type = 'page';
 					} catch {
 						console.error(`ERROR parsing Markdown:`, error);
 					}
-
-					delete template_obj.__content;
-					obj = {...obj, ...template_obj};
-					obj.type ? obj.type = obj.type : obj.type = 'page';
 				}
 
 				return obj;
@@ -441,11 +449,10 @@ export function Gondola(dir) {
 
 					try {
 						const {default: defaultFunc} = await import(full_path);
+						obj.contents = defaultFunc(data, collections, obj)
 					} catch {
 						console.error(`ERROR importing default function at ${full_path}:`, error);
 					}
-
-					obj.contents = defaultFunc(data, collections, obj)
 				}
 
 				return obj;
