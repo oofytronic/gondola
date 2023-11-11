@@ -13,14 +13,6 @@ import * as yaml_front from "yaml-front-matter";
 
 export function Gondola(dir) {
 
-	// function decipherSlug(data, line) {
-	// 	// let location;
-	// 	// line.location.includes('::') ? location = line.substring(0, line.indexOf('::')) : location = undefined;
-	// 	const slug_params = line.split('--');
-	// 	const slug = slug_params.map(param => data[param].replaceAll(' ', '-').replaceAll('.', '').replaceAll('&', 'and').replaceAll(':', '').toLowerCase()).join('-');
-	// 	return slug;
-	// }
-
 	function decipherSlug(data, line) {
 		const slugParams = line.split('--');
 		const slug = slugParams.map(param => {
@@ -559,6 +551,57 @@ export function Gondola(dir) {
 			7. Look for extensions: notification boolean...
 			8. Look for custom file that handles pwa functionality
 		*/
+
+
+		// 3
+		/* async function optimizeImage(imagePath, sizes, outputDir) {
+			// Dynamically import sharp
+			const sharp = await import('sharp');
+
+			// Ensure output directory exists
+			if (!fs.existsSync(outputDir)) {
+				fs.mkdirSync(outputDir, { recursive: true });
+			}
+
+			// Process each size and create resized images
+			return Promise.all(sizes.map(async size => {
+				const outputFilePath = path.join(outputDir, `icon-${size}.png`);
+
+				try {
+					await sharp(imagePath)
+						.resize(size, size) // Resize maintaining aspect ratio
+						.toFormat('png')    // Convert to PNG
+						.toFile(outputFilePath);
+
+					console.log(`Generated icon: ${outputFilePath}`);
+					return outputFilePath;
+				} catch (error) {
+					console.error(`Error generating icon of size ${size}:`, error);
+					return null;
+				}
+			}));
+		}
+
+		// Example Usage
+		async function generatePWAIcons() {
+			const sourceImagePath = 'path/to/source/image.jpg';
+			const iconSizes = [128, 256, 512]; // Example sizes
+			const outputDir = 'path/to/output/icons';
+
+			try {
+				const icons = await optimizeImage(sourceImagePath, iconSizes, outputDir);
+				console.log('Generated Icons:', icons);
+			} catch (error) {
+				console.error('Error generating PWA icons:', error);
+			}
+		}
+
+
+		// PWA BUILD
+		generatePWAIcons();
+		*/
+
+
 		console.log(`PWA | fetch: ${config.sw.fetch}, update: ${config.sw.update}`)
 	}
 
