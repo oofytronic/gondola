@@ -1,11 +1,4 @@
-/* html: base function for templating responsible for a multitude of tasks
-	@params {Array} strings - an array of strings from a template literal
-	@params {Array} ...values - an array of expressions from a template literal
-
-	@return {HTML} template - returns a clean version of the template literal
-*/
-
-function html(strings, ...values) {
+export function html(strings, ...values) {
 	function sanitize(string) {
 		const map = {
 			'&': '&amp;',

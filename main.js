@@ -17,7 +17,7 @@ async function main() {
 
     if (args.serve) {
 		// Extract additional options if needed
-		const port = 3000;  // Default port, you can make this configurable
+		const port = 8080;  // Default port, you can make this configurable
 		await Gondola('./').gen();
 		await Gondola('./').serve(port);
     } else {
