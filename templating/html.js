@@ -1,24 +1,31 @@
-/* Create clean html for javascript templating
+/* html: base function for templating responsible for a multitude of tasks
 	@params {Array} strings - an array of strings from a template literal
 	@params {Array} ...values - an array of expressions from a template literal
 
 	@return {HTML} template - returns a clean version of the template literal
 */
 
-// import { purify } from './helpers/DOMpurify.js';
+function html(strings, ...values) {
+	function sanitize(string) {
+		const map = {
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#x27;',
+			"/": '&#x2F;',
+		};
+		const reg = /[&<>"'/]/ig;
+		return string.replace(reg, (match) => (map[match]));
+	}
 
-export function html(strings, ...values) {
-	let template = '';
-	// const dirty = strings.reduce((prev, next, i) => `${prev}${next}${values[i] || ''}`, '');
-	// return purify.sanitize(dirty);
-	strings.forEach((string, i) => {
-		template += string + (values[i] || '');
+	return strings.reduce((result, string, i) => {
+		let value = values[i - 1];
+		if (value instanceof Array) {
+			value = value.join('');
+		} else if (value && typeof value === 'object') {
+			value = JSON.stringify(value, null, 2);
+		}
+		return result + sanitize(String(value)) + string;
 	});
-
-	return template;
 }
-
-// function sanitize(strings, ...values) {
-//     const dirty = strings.reduce((prev, next, i) => `${prev}${next}${values[i] || ''}`, '');
-//     return DOMPurify.sanitize(dirty);
-// }
