@@ -450,19 +450,22 @@ export function Gondola(dir) {
 
 
 				if (obj.ext === "md") {
-					try {
-						const template_obj = yaml_front.loadFront(await Bun.file(obj.origin).text());
-					} catch (error) {
-						console.error(`ERROR parsing YAML front matter:`, error);
-					}
+					let template_obj;
 
 					try {
-						template_obj.contents = marked.parse(template_obj.__content);
-						delete template_obj.__content;
-						obj = {...obj, ...template_obj};
-						obj.type ? obj.type = obj.type : obj.type = 'page';
+						template_obj = yaml_front.loadFront(await Bun.file(obj.origin).text());
 					} catch (error) {
-						console.error(`ERROR parsing Markdown:`, error);
+						console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
+					}
+
+					if (template_obj) {
+						try {
+							template_obj.contents = marked.parse(template_obj.__content);
+							delete template_obj.__content;
+							obj = {...obj, ...template_obj};
+						} catch (error) {
+							console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
+						}
 					}
 				}
 
