@@ -457,6 +457,7 @@ export function Gondola(dir) {
 							template_obj.contents = marked.parse(template_obj.__content);
 							delete template_obj.__content;
 							obj = {...obj, ...template_obj};
+							obj.type ? obj.type = obj.type : obj.type = 'page';
 						} catch (error) {
 							console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
 						}
