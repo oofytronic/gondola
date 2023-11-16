@@ -143,7 +143,7 @@ export function Gondola(dir) {
 							let template_obj;
 
 							try {
-								const template_obj = yaml_front.loadFront(await Bun.file(origin).text());
+								template_obj = yaml_front.loadFront(await Bun.file(origin).text());
 							} catch (error) {
 								console.error(`ERROR parsing YAML front matter at ${origin}:`, error);
 							}
@@ -161,16 +161,17 @@ export function Gondola(dir) {
 
 						if (ext === "json") {
 							let data_string;
+							let data_obj;
 
 							try {
-								const data_string = await Bun.file(obj.path).text();
+								data_string = await Bun.file(obj.path).text();
 							} catch (error) {
 								console.error(`Error getting text from ${obj.path}.`, error)
 							}
 
 							if (data_string) {
 								try {
-									const data_obj = JSON.parse(data_string);
+									data_obj = JSON.parse(data_string);
 								} catch (error) {
 									console.error(`Error parsing JSON from ${obj.path}`, error)
 								}
