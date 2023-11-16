@@ -28,7 +28,7 @@ export function Gondola(dir) {
 							.replace(/-+/g, '-') // Replace multiple hyphens with a single one
 							.trim() // Trim leading and trailing spaces
 							.toLowerCase(); // Convert to lowercase
-				} catch {
+				} catch (error) {
 					console.error(`ERROR: Could not use ${param} at ${line}`);
 				}
 			} else {
@@ -134,7 +134,7 @@ export function Gondola(dir) {
 							try {
 								const {config: configFunc} = await import(origin)
 								obj = {...obj, ...configFunc()};
-							} catch {
+							} catch (error) {
 								console.error(`ERROR finding or using function config() at ${origin}`, error)
 							}
 						}
@@ -142,7 +142,7 @@ export function Gondola(dir) {
 						if (ext === "md") {
 							try {
 								const template_obj = yaml_front.loadFront(await Bun.file(origin).text());
-							} catch {
+							} catch (error) {
 								console.error(`ERROR parsing YAML front matter at ${origin}:`, error);
 							}
 
@@ -150,7 +150,7 @@ export function Gondola(dir) {
 								template_obj.contents = marked.parse(template_obj.__content);
 								delete template_obj.__content;
 								obj = {...obj, ...template_obj};
-							} catch {
+							} catch (error) {
 								console.error(`ERROR parsing Markdown at ${origin}:`, error);
 							}	
 						}
@@ -158,13 +158,13 @@ export function Gondola(dir) {
 						if (ext === "json") {
 							try {
 								const data_string = await Bun.file(obj.path).text();
-							} catch {
+							} catch (error) {
 								console.error(`Error getting text from ${obj.path}.`, error)
 							}
 
 							try {
 								const data_obj = JSON.parse(data_string);
-							} catch {
+							} catch (error) {
 								console.error(`Error parsing JSON from ${obj.path}`, error)
 							}
 
@@ -222,7 +222,7 @@ export function Gondola(dir) {
 				arr.forEach(tag => {
 					try {
 						pushToCollections(tag);
-					} catch {
+					} catch (error) {
 						console.error(`ERROR adding file to ${tag} collection:`, error);
 					}
 				});
@@ -434,7 +434,7 @@ export function Gondola(dir) {
 						const {default: defaultFunc} = await import(obj.origin);
 						obj.contents = defaultFunc(data, collections);
 						obj.type ? obj.type = obj.type : obj.type = 'page';
-					} catch {
+					} catch (error) {
 						console.error(`ERROR importing default function at ${obj.origin}:`, error);
 					}
 				}
@@ -443,7 +443,7 @@ export function Gondola(dir) {
 				if (obj.ext === "md") {
 					try {
 						const template_obj = yaml_front.loadFront(await Bun.file(obj.origin).text());
-					} catch {
+					} catch (error) {
 						console.error(`ERROR parsing YAML front matter:`, error);
 					}
 
@@ -452,7 +452,7 @@ export function Gondola(dir) {
 						delete template_obj.__content;
 						obj = {...obj, ...template_obj};
 						obj.type ? obj.type = obj.type : obj.type = 'page';
-					} catch {
+					} catch (error) {
 						console.error(`ERROR parsing Markdown:`, error);
 					}
 				}
@@ -472,7 +472,7 @@ export function Gondola(dir) {
 					try {
 						const {default: defaultFunc} = await import(full_path);
 						obj.contents = defaultFunc(data, collections, obj)
-					} catch {
+					} catch (error) {
 						console.error(`ERROR importing default function at ${full_path}:`, error);
 					}
 				}
@@ -644,7 +644,7 @@ export function Gondola(dir) {
 		if (settings.use) {
 			try {
 				use(tree, settings);
-			} catch {
+			} catch (error) {
 				console.error(`ERROR using tool:`, error);
 			}
 		}
@@ -677,7 +677,7 @@ export function Gondola(dir) {
 		if (settings.pass) {
 			try {
 				pass(settings);
-			} catch {
+			} catch (error) {
 				console.error(`ERROR passing over files and/or directories in settings:`, error);
 			}
 		}
