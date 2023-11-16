@@ -140,32 +140,40 @@ export function Gondola(dir) {
 						}
 
 						if (ext === "md") {
+							let template_obj;
+
 							try {
 								const template_obj = yaml_front.loadFront(await Bun.file(origin).text());
 							} catch (error) {
 								console.error(`ERROR parsing YAML front matter at ${origin}:`, error);
 							}
 
-							try {
-								template_obj.contents = marked.parse(template_obj.__content);
-								delete template_obj.__content;
-								obj = {...obj, ...template_obj};
-							} catch (error) {
-								console.error(`ERROR parsing Markdown at ${origin}:`, error);
-							}	
+							if (template_obj) {
+								try {
+									template_obj.contents = marked.parse(template_obj.__content);
+									delete template_obj.__content;
+									obj = {...obj, ...template_obj};
+								} catch (error) {
+									console.error(`ERROR parsing Markdown at ${origin}:`, error);
+								}
+							}
 						}
 
 						if (ext === "json") {
+							let data_string;
+
 							try {
 								const data_string = await Bun.file(obj.path).text();
 							} catch (error) {
 								console.error(`Error getting text from ${obj.path}.`, error)
 							}
 
-							try {
-								const data_obj = JSON.parse(data_string);
-							} catch (error) {
-								console.error(`Error parsing JSON from ${obj.path}`, error)
+							if (data_string) {
+								try {
+									const data_obj = JSON.parse(data_string);
+								} catch (error) {
+									console.error(`Error parsing JSON from ${obj.path}`, error)
+								}
 							}
 
 							obj.data = data_obj;
