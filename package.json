@@ -1,5 +1,5 @@
 {
-  "name": "oofytronic/gondola",
+  "name": "test-ssg",
   "version": "0.0.2",
   "bin": {
     "gondola": "main.js"
