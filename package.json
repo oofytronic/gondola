@@ -1,26 +1,26 @@
 {
-	"name": "gondola",
-	"version": "0.0.16",
-	"bin": {
-		"gondola": "main.js"
-	},
-	"dependencies": {
-	    "marked": "^7.0.5",
-	    "yaml-front-matter": "^4.1.1"
-	},
-	"keywords": [
-	    "static-site-generator",
-	    "static-site",
-	    "ssg",
-	    "documentation",
-	    "website",
-	    "blog",
-	    "templates",
-	    "generator",
-	    "html",
-	    "markdown",
-	    "javascript",
-	    "pwa",
-	    "rss"
+  "name": "gondola",
+  "version": "0.0.16",
+  "bin": {
+    "gondola": "main.js"
+  },
+  "dependencies": {
+    "marked": "^10.0.0",
+    "yaml-front-matter": "^4.1.1"
+  },
+  "keywords": [
+    "static-site-generator",
+    "static-site",
+    "ssg",
+    "documentation",
+    "website",
+    "blog",
+    "templates",
+    "generator",
+    "html",
+    "markdown",
+    "javascript",
+    "pwa",
+    "rss"
   ]
 }
