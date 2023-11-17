@@ -1,6 +1,6 @@
 {
-  "name": "gondola",
-  "version": "0.0.16",
+  "name": "oofytronic/gondola",
+  "version": "0.0.2",
   "bin": {
     "gondola": "main.js"
   },
