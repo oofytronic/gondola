@@ -50,7 +50,9 @@ export function Gondola(dir) {
 					'package.json',
 					'bun.lockb',
 					'gondola.js',
-					'package-lock.json'
+					'package-lock.json',
+					'.netlify',
+					'.netlify/.netlify/plugins'
 				],
 				pass: [],
 				data: '_data'
@@ -101,6 +103,8 @@ export function Gondola(dir) {
 				.filter(entry => !settings.pass.includes(entry))
 				.filter(entry => entry !== settings.includes)
 				.filter(entry => entry !== settings.output)
+
+			console.log(filtered_entries)
 
 			await Promise.all(
 				filtered_entries.map(async entry => {

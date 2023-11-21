@@ -1,7 +1,7 @@
 {
   "name": "@oofytronic/test-ssg",
-  "version": "0.0.3",
-  "scripts": {
+  "version": "0.0.7",
+  "bin": {
     "gondola": "main.js"
   },
   "dependencies": {
