@@ -34,7 +34,7 @@ export function Gondola(dir) {
 			return '';
 		}).join('-');
 
-		return slug; // Return the slug as is, without URI encoding
+		return slug;
 	}
 
 	async function getSettings() {
@@ -56,7 +56,7 @@ export function Gondola(dir) {
 				data: '_data'
 			};
 
-			let user_settings
+			let user_settings;
 
 			if (fs.existsSync(path.resolve(dir, 'gondola.js'))) {
 				const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
@@ -700,85 +700,88 @@ export function Gondola(dir) {
 	    const settings = Object.freeze(await getSettings());
 	    const publicDir = settings.output;
 
-	    // Array to hold connected WebSocket clients
-	    let wsClients = [];
+	    let wsClients = []; // Store WebSocket clients
 
-	    // Function to handle WebSocket connections
-	    function handleWebSocket(socket) {
-	        wsClients.push(socket);
-	        socket.addEventListener('close', () => {
-	            wsClients = wsClients.filter(client => client !== socket);
-	        });
-	    }
-
-	    // Function to reload the browser when files change
-	    function reloadBrowser() {
-	        wsClients.forEach(client => {
-	            if (client.readyState === WebSocket.OPEN) {
-	                client.send('reload');
-	            }
-	        });
-	    }
-
-	    // Function to handle incoming HTTP requests and serve static files
 	    async function handleRequest(req) {
-	        try {
-	            const url = req.url === '/' ? '/index.html' : req.url;
-	            const filePath = `${publicDir}${url}`;
-	            const file = await Bun.file(filePath);
+		    try {
+		        const url = req.url === '/' ? '/index.html' : req.url;
+		        const filePath = `./_site${url}`; // Serve files from the '_site' folder
+		        const file = await Bun.file(filePath);
+		        return file;
+		    } catch (error) {
+		        console.error(`Error serving ${req.url}:`, error);
+		        return new Response('File not found', { status: 404 });
+		    }
+		}
 
-	            if (filePath.endsWith('.html')) {
-	                let content = await file.text();
+		bunServe({
+		    fetch: handleRequest,
+		    port: port
+		});
+		console.log(`Server running on http://localhost:${port}`);
 
-	                // Script to be injected
-	                const script = `
-	                    <script>
-	                        (function() {
-	                            const ws = new WebSocket('ws://localhost:${port}');
-	                            ws.onmessage = function(event) {
-	                                if (event.data === 'reload') {
-	                                    window.location.reload();
-	                                }
-	                            };
-	                        })();
-	                    </script>
-	                `;
 
-	                // Inject the script just before the closing </body> tag
-	                content = content.replace('</body>', `${script}</body>`);
+		// WebSocket upgrade handler
+		function handleUpgrade(req, socket) {
+		    if (req.headers.get('Upgrade') === 'websocket') {
+		        const ws = socket.accept();
+		        wsClients.push(ws);
+		        ws.addEventListener('close', () => {
+		            wsClients = wsClients.filter(client => client !== ws);
+		        });
+		    } else {
+		        socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+		    }
+		}
 
-	                return new Response(content, {
-	                    headers: { 'Content-Type': 'text/html' }
-	                });
-	            }
+		// Update bunServe to handle WebSocket upgrades
+		bunServe({
+		    fetch: handleRequest,
+		    port: port,
+		    upgrade: handleUpgrade
+		});
 
-	            return file;
-	        } catch (error) {
-	            console.error(`Error serving ${req.url}:`, error);
-	            return new Response('File not found', { status: 404 });
-	        }
-	    }
+		// Watch for file changes in the parent directory, excluding the '_site' folder
+		watch('.', { recursive: true }, (eventType, filename) => {
+		    if (!filename.startsWith('_site/')) { // Exclude the '_site' folder
+		        console.log(`File changed: ${filename}`);
+		        wsClients.forEach(client => {
+		            if (client.readyState === WebSocket.OPEN) {
+		                client.send('reload');
+		            }
+		        });
+		    }
+		});
 
-	    // Start the server with both HTTP and WebSocket support
-	    bunServe({
-	        fetch: handleRequest,
-	        port: port,
-	        upgrade: (req, socket) => {
-	            if (req.headers.get('Upgrade') === 'websocket') {
-	                handleWebSocket(socket);
-	            } else {
-	                socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-	            }
-	        }
-	    });
 
-	    console.log(`Server running on http://localhost:${port}`);
+		const directoryPath = path.join(__dirname, '_site');
 
-	    // Watch for file changes in the public directory
-	    watch(publicDir, { recursive: true }, (eventType, filename) => {
-	        console.log(`File changed: ${filename}`);
-	        reloadBrowser();
-	    });
+		fs.readdir(directoryPath, function (err, files) {
+		    if (err) {
+		        console.error('Unable to scan directory: ' + err);
+		        return;
+		    }
+		    
+		    files.forEach(function (file) {
+		        const filePath = path.join(directoryPath, file);
+		        if (filePath.endsWith('.html')) {
+		            let content = fs.readFileSync(filePath, 'utf8');
+		            content = content.replace('</body>', `
+			            <script>
+						    (function() {
+						        const ws = new WebSocket('ws://localhost:3000');
+						        ws.onmessage = function(event) {
+						            if (event.data === 'reload') {
+						                window.location.reload();
+						            }
+						        };
+						    })();
+						</script>`
+		            );
+		            fs.writeFileSync(filePath, content, 'utf8');
+		        }
+		    });
+		});
 	}
 
 
