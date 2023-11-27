@@ -50,9 +50,7 @@ export function Gondola(dir) {
 					'package.json',
 					'bun.lockb',
 					'gondola.js',
-					'package-lock.json',
-					'.netlify',
-					'.netlify/.netlify/plugins'
+					'package-lock.json'
 				],
 				pass: [],
 				data: '_data'
@@ -92,11 +90,80 @@ export function Gondola(dir) {
 		}
 	}
 
-	async function getFiles(settings, dir) {
+	async function getFiles(settings, base_dir) {
 		const files = [];
 
-		async function read(dir) {
-			const file_entries = await fs.promises.readdir(dir);
+		 async function createFileObj(filePath, base_dir) {
+			const stats = await fs.promises.stat(filePath);
+			const ext = path.extname(filePath).slice(1);
+			const relativePath = path.relative(base_dir, filePath);
+
+			let obj = {
+				name: path.basename(filePath),
+				path: relativePath,
+				origin: filePath,
+				ext: ext,
+				size: stats.size,
+				created: stats.birthtime,
+				modified: stats.mtime,
+				mode: stats.mode
+			};
+
+			if (ext === "js") {
+				try {
+					const {config: configFunc} = await import(origin)
+					obj = {...obj, ...configFunc()};
+				} catch (error) {
+					console.error(`ERROR finding or using function config() at ${origin}`, error)
+				}
+			}
+
+			if (ext === "md") {
+				let template_obj;
+
+				try {
+					template_obj = yaml_front.loadFront(await Bun.file(origin).text());
+				} catch (error) {
+					console.error(`ERROR parsing YAML front matter at ${origin}:`, error);
+				}
+
+				if (template_obj) {
+					try {
+						template_obj.contents = marked.parse(template_obj.__content);
+						delete template_obj.__content;
+						obj = {...obj, ...template_obj};
+					} catch (error) {
+						console.error(`ERROR parsing Markdown at ${origin}:`, error);
+					}
+				}
+			}
+
+			if (ext === "json") {
+				let data_string;
+				let data_obj;
+
+				try {
+					data_string = await Bun.file(obj.path).text();
+				} catch (error) {
+					console.error(`Error getting text from ${obj.path}.`, error)
+				}
+
+				if (data_string) {
+					try {
+						data_obj = JSON.parse(data_string);
+					} catch (error) {
+						console.error(`Error parsing JSON from ${obj.path}`, error)
+					}
+				}
+
+				obj.data = data_obj;
+			}
+
+			files.push(obj);
+		}
+
+		async function read(currentDir) {
+			const file_entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
 
 			const filtered_entries = file_entries
 				.filter(entry => !settings.ignore.includes(entry))
@@ -104,91 +171,110 @@ export function Gondola(dir) {
 				.filter(entry => entry !== settings.includes)
 				.filter(entry => entry !== settings.output)
 
-			console.log(filtered_entries)
-
-			await Promise.all(
-				filtered_entries.map(async entry => {
-					const entry_path = path.join(dir, entry);
-					const stats = await fs.promises.stat(entry_path);
-
-					async function createFileObj(file) {
-						const file_path = path.join(dir, file);
-						const stats = await fs.promises.stat(file_path)
-						const ext = file.split('.')[1];
-						const origin = path.resolve(dir, file);
-
-						let obj = {
-							name: file,
-							path: file_path,
-							origin: origin,
-							ext: ext,
-							size: stats.size,
-							created: stats.birthtime,
-							modified: stats.mtime,
-							mode: stats.mode
-						}
-
-						if (ext === "js") {
-							try {
-								const {config: configFunc} = await import(origin)
-								obj = {...obj, ...configFunc()};
-							} catch (error) {
-								console.error(`ERROR finding or using function config() at ${origin}`, error)
-							}
-						}
-
-						if (ext === "md") {
-							let template_obj;
-
-							try {
-								template_obj = yaml_front.loadFront(await Bun.file(origin).text());
-							} catch (error) {
-								console.error(`ERROR parsing YAML front matter at ${origin}:`, error);
-							}
-
-							if (template_obj) {
-								try {
-									template_obj.contents = marked.parse(template_obj.__content);
-									delete template_obj.__content;
-									obj = {...obj, ...template_obj};
-								} catch (error) {
-									console.error(`ERROR parsing Markdown at ${origin}:`, error);
-								}
-							}
-						}
-
-						if (ext === "json") {
-							let data_string;
-							let data_obj;
-
-							try {
-								data_string = await Bun.file(obj.path).text();
-							} catch (error) {
-								console.error(`Error getting text from ${obj.path}.`, error)
-							}
-
-							if (data_string) {
-								try {
-									data_obj = JSON.parse(data_string);
-								} catch (error) {
-									console.error(`Error parsing JSON from ${obj.path}`, error)
-								}
-							}
-
-							obj.data = data_obj;
-						}
-
-						files.push(obj);
-					}
-
-					if (stats.isDirectory()) {
-						await read(path.join(dir, entry_path));
-					} else {
-						await createFileObj(entry);
-					}
-				})
-			);
+			for (const entry of filtered_entries) {
+				const entryPath = path.join(currentDir, entry.name);
+				if (entry.isDirectory()) {
+					await read(entryPath);
+				} else {
+					await createFileObj(entryPath, base_dir);
+				}
+			}
 		}
+
+		// async function read(dir) {
+		// 	const file_entries = await fs.promises.readdir(dir);
+
+		// 	const filtered_entries = file_entries
+		// 		.filter(entry => !settings.ignore.includes(entry))
+		// 		.filter(entry => !settings.pass.includes(entry))
+		// 		.filter(entry => entry !== settings.includes)
+		// 		.filter(entry => entry !== settings.output)
+
+		// 	console.log(filtered_entries)
+
+		// 	await Promise.all(
+		// 		filtered_entries.map(async entry => {
+		// 			const entry_path = path.join(dir, entry);
+		// 			const stats = await fs.promises.stat(entry_path);
+
+		// 			async function createFileObj(file) {
+		// 				const file_path = path.join(dir, file);
+		// 				const stats = await fs.promises.stat(file_path)
+		// 				const ext = file.split('.')[1];
+		// 				const origin = path.resolve(dir, file);
+
+		// 				let obj = {
+		// 					name: file,
+		// 					path: file_path,
+		// 					origin: origin,
+		// 					ext: ext,
+		// 					size: stats.size,
+		// 					created: stats.birthtime,
+		// 					modified: stats.mtime,
+		// 					mode: stats.mode
+		// 				}
+
+		// 				if (ext === "js") {
+		// 					try {
+		// 						const {config: configFunc} = await import(origin)
+		// 						obj = {...obj, ...configFunc()};
+		// 					} catch (error) {
+		// 						console.error(`ERROR finding or using function config() at ${origin}`, error)
+		// 					}
+		// 				}
+
+		// 				if (ext === "md") {
+		// 					let template_obj;
+
+		// 					try {
+		// 						template_obj = yaml_front.loadFront(await Bun.file(origin).text());
+		// 					} catch (error) {
+		// 						console.error(`ERROR parsing YAML front matter at ${origin}:`, error);
+		// 					}
+
+		// 					if (template_obj) {
+		// 						try {
+		// 							template_obj.contents = marked.parse(template_obj.__content);
+		// 							delete template_obj.__content;
+		// 							obj = {...obj, ...template_obj};
+		// 						} catch (error) {
+		// 							console.error(`ERROR parsing Markdown at ${origin}:`, error);
+		// 						}
+		// 					}
+		// 				}
+
+		// 				if (ext === "json") {
+		// 					let data_string;
+		// 					let data_obj;
+
+		// 					try {
+		// 						data_string = await Bun.file(obj.path).text();
+		// 					} catch (error) {
+		// 						console.error(`Error getting text from ${obj.path}.`, error)
+		// 					}
+
+		// 					if (data_string) {
+		// 						try {
+		// 							data_obj = JSON.parse(data_string);
+		// 						} catch (error) {
+		// 							console.error(`Error parsing JSON from ${obj.path}`, error)
+		// 						}
+		// 					}
+
+		// 					obj.data = data_obj;
+		// 				}
+
+		// 				files.push(obj);
+		// 			}
+
+		// 			if (stats.isDirectory()) {
+		// 				await read(path.join(dir, entry_path));
+		// 			} else {
+		// 				await createFileObj(entry);
+		// 			}
+		// 		})
+		// 	);
+		// }
 
 		await read(dir);
 
