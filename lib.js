@@ -176,12 +176,15 @@ export function Gondola(dir) {
 				.filter(entry => !entry.startsWith('.') && !entry.startsWith('_'))
 				.map(async entry => {
 					const entryPath = path.join(currentDir, entry);
-					const stats = await fs.promises.stat(entryPath);
 
-					if (stats.isDirectory()) {
-						await read(entryPath);
-					} else {
-						await createFileObj(entryPath, baseDir);
+					if (fs.existsSync(entryPath)) {
+						const stats = await fs.promises.stat(entryPath);
+
+						if (stats.isDirectory()) {
+							await read(entryPath);
+						} else {
+							await createFileObj(entryPath, baseDir);
+						}
 					}
 				});
 
