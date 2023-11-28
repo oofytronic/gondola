@@ -20,7 +20,7 @@ Coming Soon!
 
 ## Quick Start
 ```
-gondola
+bun gondola
 ```
 
 ## Example: Template Page
