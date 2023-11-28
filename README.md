@@ -1,33 +1,35 @@
 # Gondola
 Gondola is a speedy static site generator and content engine for various web content structures. It can be used to create websites and Progressive Web Apps as well as web related content (books, documentation, podcasts, music, etc).
 
-***Gondola is in alpha and should not be used in production***
+***Gondola is experimental and should not be used in production***
 
 ## Overview
 - Gondola is written in Javascript.
-- Gondola uses Javascript functions and template literals as the templating system for webpages, components, and whatever else you can think of. It's all Javascript.
+- Gondola uses Javascript functions and template literals as the templating system for webpages, components, and whatever else you can think of.
 - Gondola converts Markdown files into webpages.
 - Gondola reads JSON files and stores the contents as data.
 - Each file in your project is read and converted into an object and then passed through a series of functions based on your requirements. The outcome is a new "\_site" folder ready for you to publish to the World Wide Web.
 
 ## Installation
 ```
-bun install  git@github.com:oofytronic/gondola --save-dev
+bun install @feathermode/gondola --save-dev
 ```
 
 ## Documentation
 Coming Soon!
 
 ## Quick Start
-Coming soon...
+```
+gondola
+```
 
 ## Example: Template Page
 
 ```js
 export function config() {
 	const meta = {
-		title : "Home | Made to Fly Technologies",
-		des : "We create technologies for the web that allow users to achieve digital freedom."
+		title : "Home | Airships Always",
+		description : "Airships Always is a blog devoted to the beauty of airships."
 	}
 
 	return {
@@ -40,11 +42,16 @@ export function config() {
 
 export default function home(data, collections) {
 	return `
-		<p>This is the Homepage for the Gondola Engine</p>
+		<p>Airships ascend above, altering aerial adventures amazingly. Atmospheric ambiances allure aficionados, as airborne architectures amaze. Aerostatic airships, aloft amidst azure atmospheres, afford awe-inspiring aesthetics. Aviators admire airships' agility, acknowledging aerodynamic advancements. Altogether, airships' allure adventurous aspirations."</p>
+		<ul>
+			${data.airships.map(airship => `<li>${airship.name}</li>`).join('')}
+		</ul>
 	`;
 }
 ```
 
-All JS templates are structured this way. Export a "config" function that tells Gondola what to do with the template. You can think of this as the frontmatter for your template. Export a "default" function that represents your template. Gondola will create a contents key with your template.
+In this template:
 
-4. Run "bun gondola". By default a '\_site' folder will be created with an index.html file containing your template as html. You can upload the '\_site' to your hosting platform.
+- A "config" function tells Gondola what to do with the template. You can think of this as the frontmatter for your javascript template.
+- A "default" function represents your template. Gondola will create a "contents" key with your template.
+- Within the "default" function template there is a template literal that pulls in a list of airship information from the global "data" object passed into the function by Gondola. This template literal returns a list of airship names through "map" and joins the items with empty space with join(''). We use join('') because map() returns separates array items with a "," by default.

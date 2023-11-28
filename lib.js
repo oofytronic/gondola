@@ -173,7 +173,7 @@ export function Gondola(dir) {
 				.filter(entry => !settings.pass.includes(entry))
 				.filter(entry => entry !== settings.includes)
 				.filter(entry => entry !== settings.output)
-				.filter(entry => !entry.startsWith('.') && !entry.startsWith('_'))
+				.filter(entry => !entry.startsWith('.'))
 				.map(async entry => {
 					const entryPath = path.join(currentDir, entry);
 
