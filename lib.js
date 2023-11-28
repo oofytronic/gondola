@@ -202,12 +202,16 @@ export function Gondola(dir) {
 		let data = {};
 
 		files.forEach(file => {
-			if (file.data) {
-				const data_key = file.name.split('.')[0];
-				
-				data[data_key] = file.data;
+			try {
+				if (file.data) {
+					const data_key = file.name.split('.')[0];
+					
+					data[data_key] = file.data;
+				}
+			} catch (error) {
+				console.error(`ERROR: Could not pull data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);	
 			}
-		})
+		});
 
 		return {settings, files, data}
 	}
@@ -442,7 +446,7 @@ export function Gondola(dir) {
 				if (obj.ext === "js") {
 					try {
 						const {default: defaultFunc} = await import(obj.origin);
-						obj.contents = defaultFunc(data, collections);
+						obj.contents = defaultFunc({data: data, collections: collections});
 						obj.type ? obj.type = obj.type : obj.type = 'page';
 					} catch (error) {
 						console.error(`ERROR importing default function at ${obj.origin}:`, error);
@@ -485,7 +489,7 @@ export function Gondola(dir) {
 
 					try {
 						const {default: defaultFunc} = await import(full_path);
-						obj.contents = defaultFunc(data, collections, obj)
+						obj.contents = defaultFunc({data: data, collections: collections, obj: obj})
 					} catch (error) {
 						console.error(`ERROR importing default function at ${full_path}:`, error);
 					}
