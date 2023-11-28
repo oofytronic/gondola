@@ -23,8 +23,8 @@ export function Gondola(dir) {
 						.replace(/[^a-zA-Z0-9- ]/g, '') // Remove special characters except hyphens and spaces
 						.replace(/\s+/g, '-') // Replace spaces with hyphens
 						.replace(/-+/g, '-') // Replace multiple hyphens with a single one
-						.trim() // Trim leading and trailing spaces
-						.toLowerCase(); // Convert to lowercase
+						.trim()
+						.toLowerCase();
 				} catch (error) {
 					console.error(`ERROR: Could not use ${param} at ${line}`, error);
 				}
@@ -57,6 +57,7 @@ export function Gondola(dir) {
 			};
 
 			let user_settings;
+			let joined_settings = {};
 
 			if (fs.existsSync(path.resolve(dir, 'gondola.js'))) {
 				const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
@@ -65,14 +66,12 @@ export function Gondola(dir) {
 				user_settings = {};
 			}
 
-			let joined_settings = {};
-
 			Object.entries(user_settings).forEach(([key, value]) => {
 				if (Array.isArray(value)) {
 					const default_array = Object.entries(default_settings);
 					const match = default_array.find(([default_key, default_value]) => {
 						return default_key === key
-					})
+					});
 
 					if (match !== undefined) {
 						joined_settings[key] = [...match[1], ...value]
@@ -82,11 +81,14 @@ export function Gondola(dir) {
 				} else {
 					joined_settings[key] = value
 				}
-			})
+			});
 
 			return {...default_settings, ...joined_settings};
 		} catch (error) {
-			console.error(`Error getting Settings from gondola.js:`, error);
+			console.error(`ERROR: Could not get "settings" from "gondola.js". Please make sure the following is addressed:
+				- The function within gondola.js is the 'default' function.
+				- The function returns an object {} with starter, output, includes, drafts, ignore, pass, or data keys in order to overwrite the default settings.
+			`, error);
 		}
 	}
 
