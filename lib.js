@@ -90,18 +90,19 @@ export function Gondola(dir) {
 		}
 	}
 
-	async function getFiles(settings, base_dir) {
+	async function getFiles(settings, baseDir) {
 		const files = [];
 
-		 async function createFileObj(filePath, base_dir) {
+		 async function createFileObj(filePath, baseDir) {
 			const stats = await fs.promises.stat(filePath);
 			const ext = path.extname(filePath).slice(1);
-			const relativePath = path.relative(base_dir, filePath);
+			const relativePath = path.relative(baseDir, filePath);
+			const absolutePath = path.resolve(process.cwd(), relativePath);
 
 			let obj = {
 				name: path.basename(filePath),
 				path: relativePath,
-				origin: filePath,
+				origin: absolutePath,
 				ext: ext,
 				size: stats.size,
 				created: stats.birthtime,
@@ -109,10 +110,12 @@ export function Gondola(dir) {
 				mode: stats.mode
 			};
 
+
 			if (ext === "js") {
 				try {
 					const {config: configFunc} = await import(obj.origin)
 					obj = {...obj, ...configFunc()};
+
 				} catch (error) {
 					console.error(`ERROR finding or using function config() at ${obj.origin}`, error)
 				}
@@ -163,25 +166,29 @@ export function Gondola(dir) {
 		}
 
 		async function read(currentDir) {
-			const file_entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
+			const file_entries = await fs.promises.readdir(currentDir);
 
 			const filtered_entries = file_entries
 				.filter(entry => !settings.ignore.includes(entry))
 				.filter(entry => !settings.pass.includes(entry))
 				.filter(entry => entry !== settings.includes)
 				.filter(entry => entry !== settings.output)
+				.filter(entry => !entry.startsWith('.') && !entry.startsWith('_'))
+				.map(async entry => {
+					const entryPath = path.join(currentDir, entry);
+					const stats = await fs.promises.stat(entryPath);
 
-			for (const entry of filtered_entries) {
-				const entryPath = path.join(currentDir, entry.name);
-				if (entry.isDirectory()) {
-					await read(entryPath);
-				} else {
-					await createFileObj(entryPath, base_dir);
-				}
-			}
+					if (stats.isDirectory()) {
+						await read(entryPath);
+					} else {
+						await createFileObj(entryPath, baseDir);
+					}
+				});
+
+			await Promise.all(filtered_entries);
 		}
 
-		await read(dir);
+		await read(baseDir);
 
 		return {settings, files};
 	}
