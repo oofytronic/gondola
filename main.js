@@ -1,30 +1,27 @@
 #!/usr/bin/env bun
 import {Gondola} from './lib.js';
 
-// Function to parse command line arguments
 function parseArgs() {
-    const args = Bun.argv;
-    const serveIndex = args.indexOf('--serve');
-    return {
-        serve: serveIndex !== -1
-        // Add more arguments as needed
-    };
+	const args = Bun.argv;
+	const serve_index = args.indexOf('--serve');
+	const port_index = serve_index !== -1 ? args.indexOf('--port', serve_index) : -1;
+	const port = port_index !== -1 && port_index + 1 < args.length ? parseInt(args[port_index + 1], 10) : 8080;
+
+	return {
+		serve: serve_index !== -1,
+		port: port
+	};
 }
 
-// Main function to handle commands
 async function main() {
-    const args = parseArgs();
+	const args = parseArgs();
+	const gondola_instance = Gondola('./');
 
-    if (args.serve) {
-		// Extract additional options if needed
-		const port = 8080;  // Default port, you can make this configurable
-		await Gondola('./').gen();
-		await Gondola('./').serve(port);
-    } else {
-    	await Gondola('./').gen();
-    }
+	await gondola_instance.gen();
 
-    // Add more conditions for other commands
+	if (args.serve) {
+		await gondola_instance.serve(args.port);
+	}
 }
 
 main();
