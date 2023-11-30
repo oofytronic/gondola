@@ -13,15 +13,11 @@ import * as yaml_front from "yaml-front-matter";
 
 export function Gondola(dir) {
 	/**
-	* Generates a URL-friendly slug based on specified parameters in a line. It takes a data object and a line string, splits the line string into parameters, and then processes each parameter to create a slug. The process includes normalizing the characters, removing special characters except hyphens and spaces, replacing spaces with hyphens, and converting to lowercase.
+	* Generates a URL-friendly slug based on specified parameters in a line.
 	*
 	* @param {Object} data - The data object containing key-value pairs that the function uses to construct the slug.
 	* @param {string} line - A string representing the parameters used to create the slug, separated by '--'. Each parameter should correspond to a key in the data object.
 	* @returns {string} A URL-friendly slug created from the specified parameters. If a parameter is not a string or an error occurs, it will return an empty string for that part.
-	* @example
-	* // Assuming data = { title: "My Blog Post", date: "2021-01-01" }
-	* decipherSlug(data, "title--date")
-	* // returns "my-blog-post-2021-01-01"
 	**/
 	function decipherSlug(data, line) {
 		const slugParams = line.split('--');
@@ -717,22 +713,40 @@ export function Gondola(dir) {
 		files.forEach(file => {
 			if (file.type === 'page') {
 				if (file.state === 'publish') {
-					const destination_path = file.path === '' ? file.path :
-										file.path.charAt(0) !== '/' ? `/${file.path}`
-										: file.path
+					let destinationPath;
 
-					const destination = `${output}${destination_path}/index.html`;
-					const dest_dir = path.parse(destination).dir;
-					fs.mkdirSync(dest_dir, {recursive: true})
-					fs.writeFileSync(destination, file.contents)
+					if (file.path === '') {
+						// Handle the case when file.path is an empty string
+						destinationPath = '/';
+					} else {
+						// Parse the file path to get the directory and name without extension
+						const parsedPath = path.parse(file.path);
+						const directoryPath = parsedPath.dir;
+						const fileNameWithoutExt = parsedPath.name;
+
+						// Construct the destination path
+						destinationPath = path.join(directoryPath, fileNameWithoutExt);
+
+						// Ensure destination path starts with a slash
+						destinationPath = destinationPath.charAt(0) !== '/' ? `/${destinationPath}` : destinationPath;
+					}
+
+					// Add '/index.html' to the path
+					const destination = `${output}${destinationPath}/index.html`;
+
+					// Create directory and write file
+					const destDir = path.parse(destination).dir;
+					fs.mkdirSync(destDir, {recursive: true});
+					fs.writeFileSync(destination, file.contents);
 					console.log("WROTE:", destination);
 				} else if (file.state === 'draft') {
-					console.log(`DRAFT: ${file.name}`)
+					console.log(`DRAFT: ${file.name}`);
 				} else if (!file.state) {
-					console.log(`UNDEFINED STATE: ${file.name}`)
+					console.log(`UNDEFINED STATE: ${file.name}`);
 				}
 			}
 		});
+
 
 		// PASS
 		if (settings.pass) {
