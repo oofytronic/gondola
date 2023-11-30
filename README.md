@@ -11,9 +11,9 @@ Gondola is a speedy static site generator and content engine for various web con
 - Each file in your project is read and converted into an object and then passed through a series of functions based on your requirements. The outcome is a new "\_site" folder ready for you to publish to the World Wide Web.
 
 ## Key Concepts
-- **Configuration:** Gondola does NOT require configuration to work, just installation. However, most developers will need to use the gondola.js config file to create their desired websites and web apps.
-- Gondola reads your file system starting at the directory it is installed into by default. You can change this with the "starter" setting. It turns each file it finds into a file_obj
-- 
+- **Configuration:** Gondola does NOT require configuration to work. However, most developers will need to use the *gondola.js* config file to create their desired websites and web apps.
+- **Workflow:** Gondola reads your file system starting at the directory it is installed into by default. It turns each file it finds into a *"context"* and that *"context"* is made available when writing templates along with a global "data" object and a global "collections" object. You can use *{data, collections, context}* in your JavaScript template functions.
+- **Collections:** Collections in Gondola are very much like collections in Content Management Systems. Gondola uses Collection Actions to determine what happens to a collection of files or data. "paginate" is the only action currently available. It will provide pages based on a template.
 
 ## Installation
 ```
@@ -43,12 +43,12 @@ export function config() {
 	}
 }
 
-export default function home({data}) {
+export default ({data}) => {
 	const renderAirshipsList = airships => airships.map(airship => `<li>${airship.name}</li>`).join('');
 
 	return `
 		<h1>Nimbus Nectar</h1>
-		<p>Airships ascend above, altering aerial adventures amazingly. Atmospheric ambiances allure aficionados, as airborne architectures amaze. Aerostatic airships, aloft amidst azure atmospheres, afford awe-inspiring aesthetics. Aviators admire airships' agility, acknowledging aerodynamic advancements. Altogether, airships' allure adventurous aspirations."</p>
+		<p>Airships ascend above as airborne architects amaze. Aerostats accelerate amidst azure atmospheres. Aviators arm adventurous aspirations alongside airy actions."</p>
 		<h2>List of Airships</h2>
 		<ul>
 			${renderAirshipsList(data.airships)}
