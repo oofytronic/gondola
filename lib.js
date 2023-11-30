@@ -715,9 +715,9 @@ export function Gondola(dir) {
 				if (file.state === 'publish') {
 					let destinationPath;
 
-					if (file.path === '') {
+					if (file.path === '' || file.path === 'home.js' || file.path === 'index.js' || file.path === 'index.md' || file.path === 'home.md') {
 						// Handle the case when file.path is an empty string
-						destinationPath = '/';
+						destinationPath = '';
 					} else {
 						// Parse the file path to get the directory and name without extension
 						const parsedPath = path.parse(file.path);
