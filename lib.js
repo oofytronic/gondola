@@ -43,9 +43,7 @@ export function Gondola(dir) {
 		return slug;
 	}
 
-	/**
-	 * Combines the default settings with user settings to present the overall preferences as an object that is referenced when making generation decisions.
-	 **/
+	/** Combines the default settings with user settings to present the overall preferences as an object that is referenced when making generation decisions. **/
 	async function getSettings() {
 		try {
 			let default_settings = {
@@ -101,13 +99,11 @@ export function Gondola(dir) {
 		}
 	}
 
-	/**
-	 * Reads the project "starter" directory and creates file_objects from file information.
-	 **/
+	/** Reads the project "starter" directory and creates file_objects from file information. **/
 	async function getFiles(settings, baseDir) {
 		const files = [];
 
-		 async function createFileObj(filePath, baseDir) {
+		async function createFileObj(filePath, baseDir) {
 			const stats = await fs.promises.stat(filePath);
 			const ext = path.extname(filePath).slice(1);
 			const relativePath = path.relative(baseDir, filePath);
@@ -210,9 +206,7 @@ export function Gondola(dir) {
 		return {settings, files};
 	}
 
-	/**
-	 * Creates a global data object from file data using the name of the file as the key within the object.
-	 **/
+	/** Creates a global data object from file data using the name of the file as the key within the object. **/
 	function setData({settings, files} = {}) {
 		let data = {};
 
@@ -231,9 +225,7 @@ export function Gondola(dir) {
 		return {settings, files, data}
 	}
 
-	/**
-	 * Creates a collection from an action or set of actions and houses them within a global collections object or generates files.
-	 **/
+	/** Creates a collection from an action or set of actions and houses them within a global collections object or generates files. **/
 	function setCollections({settings, files, data} = {}) {
 		let collections = {};
 
@@ -403,8 +395,7 @@ export function Gondola(dir) {
 						}
 
 						// Results to collections
-						function organize(set) {
-						}
+						function organize(set) {}
 
 						// Use files colllection as base
 						function remedyFiles(array1, array2) {
@@ -459,9 +450,7 @@ export function Gondola(dir) {
 		return {settings, files, data, collections}
 	}
 
-	/**
-	 * Creates a contents key/value pair within the file object that houses the template for that file.
-	 **/
+	/** Creates a contents key/value pair within the file object that houses the template for that file. **/
 	function setTemplates({settings, files, data, collections} = {}) {
 		return Promise.all(files.map(async obj => {
 				if (obj.ext === "js") {
@@ -503,9 +492,7 @@ export function Gondola(dir) {
 		})
 	}
 
-	/**
-	 * Creates an html layout which typically houses the contents of specified file object.
-	 **/
+	/** Creates an html layout which typically houses the contents of specified file object. **/
 	function setLayouts({settings, files, data, collections} = {}) {
 		return Promise.all(files.map(async obj => {
 				if (obj.layout) {
@@ -527,9 +514,7 @@ export function Gondola(dir) {
 	}
 
 	// TOOLS
-	/**
-	 * Creates a RSS feed based on a set collection within the settings object.
-	 **/
+	/** Creates a RSS feed based on a set collection within the settings object. **/
 	function setSyndication(settings, config, feed) {
 
 		// LOOK FOR TYPE: RSS, Atom, JSONfeed
@@ -585,9 +570,7 @@ export function Gondola(dir) {
 		console.log(`WROTE: ${settings.output}/feed.xml`);
 	}
 
-	/**
-	 * Creates the various parts of a simple PWA based on the settings object.
-	 **/
+	/** Creates the various parts of a simple PWA based on the settings object. **/
 	function setPWA(settings, config) {
 		/*
 			1. Set manifest file from config || look for manifest.json/.webmanifest file
@@ -653,9 +636,7 @@ export function Gondola(dir) {
 		console.log(`PWA | fetch: ${config.sw.fetch}, update: ${config.sw.update}`)
 	}
 
-	/**
-	 * Passes through directories and files specified in the settings object.
-	 **/
+	/** Passes through directories and files specified in the settings object. **/
 	function pass(settings) {
 		const output = settings.output;
 		settings.pass.forEach(item => {
@@ -664,9 +645,7 @@ export function Gondola(dir) {
 		})
 	}
 
-	/**
-	 * Creates a plugin chain for plugins to be used at build time.
-	 **/
+	/** Creates a plugin chain for plugins to be used at build time. **/
 	function use(tree, settings) {
 		settings.use.forEach(plugin => {
 			if (plugin.name === "syndication") {
@@ -681,9 +660,7 @@ export function Gondola(dir) {
 	}
 
 	// GENERATE
-	/**
-	 * Creates an "output" of directories and files based on the result of a chain of functions.
-	 **/
+	/** Creates an "output" of directories and files based on the result of a chain of functions. **/
 	async function gen() {
 		const start = new Date().getTime();
 		const settings = Object.freeze(await getSettings());
@@ -764,9 +741,7 @@ export function Gondola(dir) {
 	}
 
 	// SERVE
-	/**
-	 * Creates a live websocket server with hot reload capabilities.
-	 **/
+	/** Creates a live websocket server with hot reload capabilities. **/
 	async function serve(port) {
 	    const settings = Object.freeze(await getSettings());
 	    const publicDir = settings.output;
