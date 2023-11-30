@@ -1,13 +1,20 @@
 {
   "name": "@oofytronic/test-ssg",
-  "version": "0.0.17",
+  "version": "0.0.18",
+  "description": "A lightweight, fast and simple static site generator and PWA generator made for Bun that aims to remove the complexity of creating websites and web apps while providing a modern developer experience.",
   "bin": {
     "gondola": "main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oofytronic/gondola"
   },
   "dependencies": {
     "marked": "^10.0.0",
     "yaml-front-matter": "^4.1.1"
   },
+  "author": "OOF <oof@feathermode.com> (feathermode.com)",
+  "license": "MIT",
   "keywords": [
     "static-site-generator",
     "static-site",
@@ -21,6 +28,7 @@
     "markdown",
     "javascript",
     "pwa",
-    "rss"
+    "rss",
+    "components"
   ]
 }

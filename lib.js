@@ -662,7 +662,7 @@ export function Gondola(dir) {
 	// GENERATE
 	/** Creates an "output" of directories and files based on the result of a chain of functions. **/
 	async function gen() {
-		const start = new Date().getTime();
+		const start = Date.now();
 		const settings = Object.freeze(await getSettings());
 		const output = settings.output;
 
@@ -735,8 +735,8 @@ export function Gondola(dir) {
 		}
 
 		// END
-		const end = new Date().getTime();
-		const total_time = (end-start)/1000;
+		const end = Date.now();
+		const total_time = (end - start) / 1000;
 		console.log(`Built in ${total_time} seconds`);
 	}
 
