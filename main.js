@@ -25,7 +25,6 @@ function parseArgs() {
 
 async function main() {
 	const args = parseArgs();
-	const args = parseArgs();
 
 	if (args.serve) {
 		await Gondola('./').gen();
