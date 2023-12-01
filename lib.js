@@ -157,14 +157,14 @@ export function Gondola(dir) {
 				try {
 					data_string = await Bun.file(obj.path).text();
 				} catch (error) {
-					console.error(`Error getting text from ${obj.path}.`, error)
+					console.error(`ERROR getting text from ${obj.path}.`, error)
 				}
 
 				if (data_string) {
 					try {
 						data_obj = JSON.parse(data_string);
 					} catch (error) {
-						console.error(`Error parsing JSON from ${obj.path}`, error)
+						console.error(`ERROR parsing JSON from ${obj.path}`, error)
 					}
 				}
 
@@ -740,7 +740,7 @@ export function Gondola(dir) {
 	}
 
 	// SERVE
-	/** Creates a live websocket server with hot reload capabilities. **/
+	/** Creates an http server. **/
 	async function serve(port) {
 	    const settings = await getSettings();
     	const output_dir = path.join(dir, settings.output);
