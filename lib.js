@@ -742,6 +742,7 @@ export function Gondola(dir) {
 	// SERVE
 	/** Creates a live websocket server with hot reload capabilities. **/
 	async function serve(port) {
+		console.log(port)
 	    const settings = Object.freeze(await getSettings());
 
 		const output_dir = path.join(dir, settings.output);
@@ -777,10 +778,10 @@ export function Gondola(dir) {
                 } else {
                     socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
                 }
-            },
+            }
         });
 
-	    console.log(`WebSocket server running on ws://localhost:${port}`);
+	    // console.log(`WebSocket server running on ws://localhost:${port}`);
 	}
 
 	return {
