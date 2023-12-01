@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // BUN
-import { serve } from 'bun';
+import { serve as bunServe } from 'bun';
 
 // EXTERNAL
 import {marked} from 'marked';
@@ -747,7 +747,7 @@ export function Gondola(dir) {
 
 		const output_dir = path.join(dir, settings.output);
 
-        serve({
+        bunServe({
             fetch(req) {
                 const urlPath = new URL(req.url).pathname;
                 const filePath = path.join(output_dir, urlPath === '/' ? 'index.html' : urlPath);
