@@ -743,34 +743,34 @@ export function Gondola(dir) {
 	/** Creates a live websocket server with hot reload capabilities. **/
 	async function serve(port) {
 	    const settings = await getSettings();
-    const output_dir = path.join(dir, settings.output);
+    	const output_dir = path.join(dir, settings.output);
 
-    bunServe({
-        fetch(req) {
-            const urlPath = new URL(req.url).pathname;
-            // Assuming 'index.html' is the default file to serve
-            const filePath = path.join(output_dir, urlPath === '/' ? 'index.html' : urlPath);
+		bunServe({
+			fetch(req) {
+				try {
+					const url_path = new URL(req.url).pathname;
+					const file_path = path.join(output_dir, url_path);
 
-            try {
-                if (fs.existsSync(filePath)) {
-                    const fileContents = fs.readFileSync(filePath);
-                    return new Response(fileContents, {
-                        headers: {
-                            // You might need to adjust the content type based on the file type
-                            'Content-Type': 'text/html'
-                        }
-                    });
-                }
-                return new Response('File not found', { status: 404 });
-            } catch (error) {
-                console.error(`Error serving ${req.url}:`, error);
-                return new Response('Internal Server Error', { status: 500 });
-            }
-        },
-        port: port
-    });
+					if (fs.existsSync(file_path) && fs.statSync(file_path).isDirectory()) {
+						file_path = path.join(file_path, 'index.html');
+					}
 
-    console.log(`HTTP server running on http://localhost:${port}`);
+					if (fs.existsSync(file_path)) {
+						return new Response(fs.readFileSync(file_path), {
+							headers: { 'Content-Type': 'text/html' } // Adjust content type if needed
+						});
+					}
+
+					return new Response('File not found', { status: 404 });
+				} catch (error) {
+					console.error(`Error serving ${req.url}:`, error);
+					return new Response('Internal Server Error', { status: 500 });
+				}
+			},
+			port: port
+		});
+
+		console.log(`HTTP server running on http://localhost:${port}`);
 	}
 
 	return {
