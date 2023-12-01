@@ -25,12 +25,13 @@ function parseArgs() {
 
 async function main() {
 	const args = parseArgs();
-	const gondola_instance = Gondola('./');
-
-	await gondola_instance.gen();
+	const args = parseArgs();
 
 	if (args.serve) {
-		await gondola_instance.serve(args.port);
+		await Gondola('./').gen();
+		await Gondola('./').serve(args.port);
+	} else {
+		await Gondola('./').gen();
 	}
 }
 
