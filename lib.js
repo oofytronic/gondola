@@ -748,8 +748,8 @@ export function Gondola(dir) {
 		bunServe({
 			fetch(req) {
 				try {
-					const url_path = new URL(req.url).pathname;
-					const file_path = path.join(output_dir, url_path);
+					let url_path = new URL(req.url).pathname;
+					let file_path = path.join(output_dir, url_path);
 
 					if (fs.existsSync(file_path) && fs.statSync(file_path).isDirectory()) {
 						file_path = path.join(file_path, 'index.html');
