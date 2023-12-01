@@ -742,46 +742,35 @@ export function Gondola(dir) {
 	// SERVE
 	/** Creates a live websocket server with hot reload capabilities. **/
 	async function serve(port) {
-		console.log(port)
-	    const settings = Object.freeze(await getSettings());
+	    const settings = await getSettings();
+    const output_dir = path.join(dir, settings.output);
 
-		const output_dir = path.join(dir, settings.output);
+    bunServe({
+        fetch(req) {
+            const urlPath = new URL(req.url).pathname;
+            // Assuming 'index.html' is the default file to serve
+            const filePath = path.join(output_dir, urlPath === '/' ? 'index.html' : urlPath);
 
-        bunServe({
-            fetch(req) {
-                const urlPath = new URL(req.url).pathname;
-                const filePath = path.join(output_dir, urlPath === '/' ? 'index.html' : urlPath);
-
-                try {
-                    if (fs.existsSync(filePath)) {
-                        return new Response(fs.readFileSync(filePath), {
-                            headers: {
-                                'Content-Type': 'text/html' // or other appropriate content type based on file
-                            }
-                        });
-                    }
-
-                    return new Response('File not found', { status: 404 });
-                } catch (error) {
-                    console.error(`Error serving ${req.url}:`, error);
-                    return new Response('Internal Server Error', { status: 500 });
-                }
-            },
-            port: port,
-            upgrade(req, socket) {
-                if (req.headers.get('Upgrade') === 'websocket') {
-                    const ws = socket.accept();
-                    ws.addEventListener('message', (event) => {
-                        console.log('Received message:', event.data);
-                        ws.send('Message received');
+            try {
+                if (fs.existsSync(filePath)) {
+                    const fileContents = fs.readFileSync(filePath);
+                    return new Response(fileContents, {
+                        headers: {
+                            // You might need to adjust the content type based on the file type
+                            'Content-Type': 'text/html'
+                        }
                     });
-                } else {
-                    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
                 }
+                return new Response('File not found', { status: 404 });
+            } catch (error) {
+                console.error(`Error serving ${req.url}:`, error);
+                return new Response('Internal Server Error', { status: 500 });
             }
-        });
+        },
+        port: port
+    });
 
-	    // console.log(`WebSocket server running on ws://localhost:${port}`);
+    console.log(`HTTP server running on http://localhost:${port}`);
 	}
 
 	return {
