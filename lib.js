@@ -7,6 +7,7 @@ import { serve as bunServe } from 'bun';
 
 // EXTERNAL
 import {marked} from 'marked';
+import {MarkdownIt} from 'markdown-it';
 import * as yaml_front from "yaml-front-matter";
 
 
@@ -141,7 +142,9 @@ export function Gondola(dir) {
 
 				if (template_obj) {
 					try {
-						template_obj.contents = marked.parse(template_obj.__content);
+						const md = new MarkdownIt();
+						template_obj.contents = md.render(template_obj.__content);
+						//template_obj.contents = marked.parse(template_obj.__content);
 						delete template_obj.__content;
 						obj = {...obj, ...template_obj};
 					} catch (error) {
@@ -474,7 +477,9 @@ export function Gondola(dir) {
 
 					if (template_obj) {
 						try {
-							template_obj.contents = marked.parse(template_obj.__content);
+							const md = new MarkdownIt();
+							template_obj.contents = md.render(template_obj.__content);
+							//template_obj.contents = marked.parse(template_obj.__content);
 							delete template_obj.__content;
 							obj = {...obj, ...template_obj};
 							obj.type ? obj.type = obj.type : obj.type = 'page';
