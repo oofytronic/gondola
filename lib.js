@@ -773,6 +773,21 @@ export function Gondola(dir) {
 	    const settings = await getSettings();
     	const output_dir = path.join(dir, settings.output);
 
+		function getContentType(filePath) {
+			const extension = path.extname(filePath);
+			switch (extension) {
+				case '.html': return 'text/html';
+				case '.css': return 'text/css';
+				case '.js': return 'application/javascript';
+				case '.json': return 'application/json';
+				case '.png': return 'image/png';
+				case '.jpg': return 'image/jpeg';
+				case '.jpeg': return 'image/jpeg';
+				case '.gif': return 'image/gif';
+				default: return 'text/plain';
+			}
+		}
+
 		bunServe({
 			fetch(req) {
 				try {
@@ -784,8 +799,10 @@ export function Gondola(dir) {
 					}
 
 					if (fs.existsSync(file_path)) {
+						const contentType = getContentType(file_path);
+
 						return new Response(fs.readFileSync(file_path), {
-							headers: { 'Content-Type': 'text/html' } // Adjust content type if needed
+							headers: { 'Content-Type': contentType }
 						});
 					}
 
