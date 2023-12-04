@@ -6,10 +6,12 @@ import * as path from 'path';
 import { serve as bunServe } from 'bun';
 
 // EXTERNAL
-import {marked} from 'marked';
+//import {marked} from 'marked';
 import MarkdownIt from 'markdown-it';
-import createDOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
+import DOMPurify from 'isomorphic-dompurify';
+
+//import createDOMPurify from 'dompurify';
+//import { JSDOM } from 'jsdom';
 import * as yaml_front from "yaml-front-matter";
 
 
@@ -134,9 +136,6 @@ export function Gondola(dir) {
 			}
 
 			if (ext === "md") {
-				const window = new JSDOM('').window;
-				const DOMPurify = createDOMPurify(window);
-
 				let template_obj;
 
 				try {
@@ -482,9 +481,6 @@ export function Gondola(dir) {
 
 
 				if (obj.ext === "md") {
-					const window = new JSDOM('').window;
-					const DOMPurify = createDOMPurify(window);
-
 					let template_obj;
 
 					try {
