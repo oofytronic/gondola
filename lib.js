@@ -8,7 +8,7 @@ import { serve as bunServe } from 'bun';
 // EXTERNAL
 //import {marked} from 'marked';
 import MarkdownIt from 'markdown-it';
-import DOMPurify from 'isomorphic-dompurify';
+//import DOMPurify from 'isomorphic-dompurify';
 
 //import createDOMPurify from 'dompurify';
 //import { JSDOM } from 'jsdom';
@@ -154,7 +154,7 @@ export function Gondola(dir) {
 						let rawHtml = md.render(template_obj.__content);
 
 						// Sanitize the HTML
-						template_obj.contents = DOMPurify.sanitize(rawHtml);
+						template_obj.contents = rawHtml;
 
 						// const md = new MarkdownIt();
 						// template_obj.contents = md.render(template_obj.__content);
@@ -499,7 +499,7 @@ export function Gondola(dir) {
 							let rawHtml = md.render(template_obj.__content);
 
 							// Sanitize the HTML
-							template_obj.contents = DOMPurify.sanitize(rawHtml);
+							template_obj.contents = rawHtml;
 							// const md = new MarkdownIt();
 							// template_obj.contents = md.render(template_obj.__content);
 							//template_obj.contents = marked.parse(template_obj.__content);
