@@ -472,7 +472,7 @@ export function Gondola(dir) {
 				if (obj.ext === "js") {
 					try {
 						const {default: defaultFunc} = await import(obj.origin);
-						obj.contents = defaultFunc({data: data, collections: collections});
+						obj.contents = defaultFunc({data: data, collections: collections, context: obj});
 						obj.type ? obj.type = obj.type : obj.type = 'page';
 					} catch (error) {
 						console.error(`ERROR importing default function at ${obj.origin}:`, error);
@@ -527,7 +527,7 @@ export function Gondola(dir) {
 
 					try {
 						const {default: defaultFunc} = await import(full_path);
-						obj.contents = defaultFunc({data: data, collections: collections, obj: obj})
+						obj.contents = defaultFunc({data: data, collections: collections, context: obj})
 					} catch (error) {
 						console.error(`ERROR importing default function at ${full_path}:`, error);
 					}
