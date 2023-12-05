@@ -292,6 +292,33 @@ export function Gondola(dir) {
 								return file;
 							})
 
+							// SORT
+							if (set.sort) {
+								modified_files = modified_files.map(file => {
+									if (set.sort.by === "date" || !set.sort.by) {
+										if (set.sort.format === "mmddyyyy" || !set.sort.format) {
+											const dateParts = file.date.split(/-|\//); // - OR /
+											
+											const month = parseInt(dateParts[0], 10) - 1;
+											const day = parseInt(dateParts[1], 10);
+											const year = parseInt(dateParts[2], 10);
+											file.date = new Date(year, month, day);
+										}
+									}
+									
+									return file;
+								})
+
+								if (set.sort.order === "newest" || !set.sort.order) {
+									modified_files = modified_files.toSorted((a, b) => b.date.getTime() - a.date.getTime());
+								}
+
+								if (set.sort.order === "oldest") {
+									modified_files = modified_files.toSorted((a, b) => a.date.getTime() - b.date.getTime());
+								}
+							}
+
+							// SIZE
 							if (set.size) {
 								// DEFAULTS
 								let iterateWith;
@@ -305,33 +332,10 @@ export function Gondola(dir) {
 									: [arr];
 								}
 
-								if (set.sort) {
-									modified_files = modified_files.map(file => {
-										if (set.sort.by === "date" || !set.sort.by) {
-											if (set.sort.format === "mmddyyyy" || !set.sort.format) {
-												const dateParts = file.date.split(/-|\//); // - OR /
-												
-												const month = parseInt(dateParts[0], 10) - 1;
-												const day = parseInt(dateParts[1], 10);
-												const year = parseInt(dateParts[2], 10);
-												file.date = new Date(year, month, day);
-											}
-										}
-										
-										return file;
-									})
-
-									if (set.sort.order === "newest" || !set.sort.order) {
-										modified_files = modified_files.toSorted((a, b) => b.date.getTime() - a.date.getTime());
-									}
-
-									if (set.sort.order === "oldest") {
-										modified_files = modified_files.toSorted((a, b) => a.date.getTime() - b.date.getTime());
-									}
-								}
-
 								const chunked_data = chunkArray(modified_files, set.size);
 
+
+								// THIS NEEDS TO BE A FUNCTION: that creates pages with or without chunked data and always returns access completed collection objects so developers can create toc or documentation.
 								const new_pages = chunked_data.map(arr => {
 									const position = chunked_data.indexOf(arr);
 									const dirPath = set.path;
@@ -406,9 +410,6 @@ export function Gondola(dir) {
 							}
 						}
 
-						// Results to collections
-						function organize(set) {}
-
 						// Use files colllection as base
 						function remedyFiles(array1, array2) {
 
@@ -438,7 +439,6 @@ export function Gondola(dir) {
 						}
 
 						set.action === "paginate" ? files = remedyFiles(files, paginate(set))
-						: set.action === "organize" ? organize(set)
 						: console.error(`There is no function for "${set.action}". You can create one and pass it through in your settings with "use". Default actions offered by Gondola are: [paginate, organize(coming soon)]`);
 					}
 
