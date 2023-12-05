@@ -335,8 +335,6 @@ export function Gondola(dir) {
 
 								const chunked_data = chunkArray(modified_files, set.size);
 
-
-								// THIS NEEDS TO BE A FUNCTION: that creates pages with or without chunked data and always returns access completed collection objects so developers can create toc or documentation.
 								const new_pages = chunked_data.map(arr => {
 									const position = chunked_data.indexOf(arr);
 									
@@ -407,7 +405,8 @@ export function Gondola(dir) {
 
 								return new_pages;
 							} else {
-								modified_files.map(file => {
+								const new_pages = modified_files.map(file => {
+									const position = modified_files.indexOf(file);
 									let n = modified_files.length - 1;
 									
 									const hrefs = [];
@@ -467,7 +466,7 @@ export function Gondola(dir) {
 									return new_page;
 								});
 
-								return modified_files
+								return new_pages;
 							}
 						}
 
@@ -500,7 +499,7 @@ export function Gondola(dir) {
 						}
 
 						set.action === "paginate" ? files = remedyFiles(files, paginate(set))
-						: console.error(`There is no function for "${set.action}". You can create one and pass it through in your settings with "use". Default actions offered by Gondola are: [paginate, organize(coming soon)]`);
+						: console.error(`ERROR: There is no function for "${set.action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, organize(coming soon)]`);
 					}
 
 					function runActions(obj) {
@@ -513,7 +512,7 @@ export function Gondola(dir) {
 
 					collection.action ? runAction(collection)
 					: collection.actions ? runActions(collection)
-					: console.error(`Your collection "${collection.name}" needs at least one action attached to it.`)
+					: console.error(`ERROR: Your collection "${collection.name}" needs at least one action attached to it.`)
 				})
 			} else if (typeof settings.collect === 'string') {
 				console.error(`ERROR: settings.collect should be an array:`, error);
