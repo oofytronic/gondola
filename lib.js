@@ -452,8 +452,8 @@ export function Gondola(dir) {
 									}
 
 									const new_page = {
-										name: pagePath,
-										path: pagePath,
+										name: dirPath,
+										path: dirPath,
 										type: 'page',
 										state: set.state,
 										layout: set.layout,
