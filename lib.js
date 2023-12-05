@@ -403,71 +403,83 @@ export function Gondola(dir) {
 									return new_page;
 								});
 
-								return new_pages;
-							} else {
-								const new_pages = modified_files.map(file => {
-									const position = modified_files.indexOf(file);
-									let n = modified_files.length - 1;
-									
-									const hrefs = [];
-									
-									function iterate(n){
-										if (n !== 0) {
-											hrefs.push(`${dirPath}/${n}`);
-											n = n-1;
-											iterate(n);
-										} else {
-											hrefs.push(`${dirPath}`);
-											return
-										}
-									}
-									
-									iterate(n);
-									
-									const sortedHrefs = hrefs.sort();
-
-									const lastItem = n;
-									let params = {}
-									if (position !== 0 && position !== lastItem) {
-										params = {
-											next: `${dirPath}/${position + 1}`,
-											previous: `${dirPath}/${position - 1}`,
-											first: `${dirPath}`,
-											last: `${dirPath}/${lastItem}`,
-										}
-									} else if (position === 0) {
-										params = {
-											next: `${dirPath}/${position + 1}`,
-											previous: undefined,
-											first: undefined,
-											last: `${dirPath}/${lastItem}`,
-										}
-									} else if (position === lastItem) {
-										params = {
-											next: undefined,
-											previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
-											first: `${dirPath}`,
-											last: undefined,
-										}
-									}
-
-									const new_page = {
-										name: dirPath,
-										path: dirPath,
-										type: 'page',
-										state: set.state,
-										layout: set.layout,
-										meta: set.meta,
-										data: file,
-										hrefs: sortedHrefs,
-										href: params
-									}
-
-									return new_page;
-								});
-
-								return new_pages;
+								modified_files = new_pages;
 							}
+
+							if (set.toGlobal === true) {
+								Object.entries(collections).map(([key, value]) => {
+									if (key === set.name) {
+										collections[key] = modified_files;
+									}
+								});
+							}
+
+							// if (idk) {
+							// 	const new_pages = modified_files.map(file => {
+							// 		const position = modified_files.indexOf(file);
+							// 		let n = modified_files.length - 1;
+
+							// 		const hrefs = [];
+
+							// 		function iterate(n){
+							// 			if (n !== 0) {
+							// 				hrefs.push(`${dirPath}/${n}`);
+							// 				n = n-1;
+							// 				iterate(n);
+							// 			} else {
+							// 				hrefs.push(`${dirPath}`);
+							// 				return
+							// 			}
+							// 		}
+
+							// 		iterate(n);
+
+							// 		const sortedHrefs = hrefs.sort();
+
+							// 		const lastItem = n;
+							// 		let params = {}
+							// 		if (position !== 0 && position !== lastItem) {
+							// 			params = {
+							// 				next: `${dirPath}/${position + 1}`,
+							// 				previous: `${dirPath}/${position - 1}`,
+							// 				first: `${dirPath}`,
+							// 				last: `${dirPath}/${lastItem}`,
+							// 			}
+							// 		} else if (position === 0) {
+							// 			params = {
+							// 				next: `${dirPath}/${position + 1}`,
+							// 				previous: undefined,
+							// 				first: undefined,
+							// 				last: `${dirPath}/${lastItem}`,
+							// 			}
+							// 		} else if (position === lastItem) {
+							// 			params = {
+							// 				next: undefined,
+							// 				previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
+							// 				first: `${dirPath}`,
+							// 				last: undefined,
+							// 			}
+							// 		}
+
+							// 		const new_page = {
+							// 			name: file.name,
+							// 			path: file.path,
+							// 			type: 'page',
+							// 			state: set.state,
+							// 			layout: set.layout,
+							// 			meta: set.meta,
+							// 			data: file,
+							// 			hrefs: sortedHrefs,
+							// 			href: params
+							// 		}
+
+							// 		return new_page;
+							// 	});
+
+							// 	return new_pages;
+							// }
+
+							return modified_files;
 						}
 
 						// Use files colllection as base
