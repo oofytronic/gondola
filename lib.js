@@ -274,6 +274,7 @@ export function Gondola(dir) {
 			if (Array.isArray(settings.collect)) {
 				settings.collect.map(collection => {
 					function runAction(set) {
+						const dirPath = set.path;
 						// Results to Files
 						function paginate(set) {
 							let paginated_files;
@@ -338,7 +339,7 @@ export function Gondola(dir) {
 								// THIS NEEDS TO BE A FUNCTION: that creates pages with or without chunked data and always returns access completed collection objects so developers can create toc or documentation.
 								const new_pages = chunked_data.map(arr => {
 									const position = chunked_data.indexOf(arr);
-									const dirPath = set.path;
+									
 
 									// Get page path
 									let pagePath;
@@ -406,6 +407,66 @@ export function Gondola(dir) {
 
 								return new_pages;
 							} else {
+								modified_files.map(file => {
+									let n = modified_files.length - 1;
+									
+									const hrefs = [];
+									
+									function iterate(n){
+										if (n !== 0) {
+											hrefs.push(`${dirPath}/${n}`);
+											n = n-1;
+											iterate(n);
+										} else {
+											hrefs.push(`${dirPath}`);
+											return
+										}
+									}
+									
+									iterate(n);
+									
+									const sortedHrefs = hrefs.sort();
+
+									const lastItem = n;
+									let params = {}
+									if (position !== 0 && position !== lastItem) {
+										params = {
+											next: `${dirPath}/${position + 1}`,
+											previous: `${dirPath}/${position - 1}`,
+											first: `${dirPath}`,
+											last: `${dirPath}/${lastItem}`,
+										}
+									} else if (position === 0) {
+										params = {
+											next: `${dirPath}/${position + 1}`,
+											previous: undefined,
+											first: undefined,
+											last: `${dirPath}/${lastItem}`,
+										}
+									} else if (position === lastItem) {
+										params = {
+											next: undefined,
+											previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
+											first: `${dirPath}`,
+											last: undefined,
+										}
+									}
+
+									const new_page = {
+										name: pagePath,
+										path: pagePath,
+										type: 'page',
+										state: set.state,
+										layout: set.layout,
+										meta: set.meta,
+										data: file,
+										hrefs: sortedHrefs,
+										href: params
+									}
+
+									return new_page;
+								});
+
 								return modified_files
 							}
 						}
