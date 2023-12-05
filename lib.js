@@ -1,17 +1,13 @@
 // NODE
 import * as fs from 'fs';
 import * as path from 'path';
+import { exec } from 'child_process';
 
 // BUN
 import { serve as bunServe } from 'bun';
 
 // EXTERNAL
-//import {marked} from 'marked';
 import MarkdownIt from 'markdown-it';
-//import DOMPurify from 'isomorphic-dompurify';
-
-//import createDOMPurify from 'dompurify';
-//import { JSDOM } from 'jsdom';
 import * as yaml_front from "yaml-front-matter";
 
 
@@ -816,6 +812,15 @@ export function Gondola(dir) {
 		});
 
 		console.log(`HTTP server running on http://localhost:${port}`);
+
+		// Open browser
+		const url = `http://localhost:${port}`;
+		const start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open');
+		exec(`${start} ${url}`, (err) => {
+			if (err) {
+				console.warn('SERVE: Failed to automatically open browser. Server is running. Manually open.');
+			}
+		});
 	}
 
 	return {
