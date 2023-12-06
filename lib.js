@@ -237,6 +237,12 @@ export function Gondola(dir) {
 	function setCollections({settings, files, data} = {}) {
 		let collections = {};
 
+		// AVAILABLE TO ALL COLLECTIONS
+		/*
+		* sort
+		* filter
+		*/
+
 		// COLLECTION FROM FILES
 		files
 		.filter(file => file.collections)
@@ -520,9 +526,9 @@ export function Gondola(dir) {
 						})
 					}
 
-					collection.action ? runAction(collection)
-					: collection.actions ? runActions(collection)
-					: console.error(`ERROR: Your collection "${collection.name}" needs at least one action attached to it.`)
+					typeof collection.actions === 'string' || Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection)
+					: Array.isArray(collection.actions) ? runActions(collection)
+					: console.error(`ERROR: Your collection "${collection.name}" needs at least one action attached to it. If using ONE action, return a string OR an Array with one item. If using MULTIPLE actions, return an Array.`)
 				})
 			} else if (typeof settings.collect === 'string') {
 				console.error(`ERROR: settings.collect should be an array:`, error);
