@@ -478,9 +478,8 @@ export function Gondola(dir) {
 					}
 
 					function runActions(collection) {
-						const list = collection.actions;
-						list.forEach(action => {
-							let collection.actions = []
+						collection.actions.forEach(action => {
+							collection.actions = []
 							collection.actions.push(action);
 							runAction(collection);
 						});
