@@ -143,7 +143,7 @@ export function Gondola(dir) {
 				if (template_obj) {
 					try {
 						const md = new MarkdownIt({
-							html: true  // Enable HTML tags in Markdown
+							html: true
 						});
 
 						// Render Markdown to HTML
@@ -151,10 +151,6 @@ export function Gondola(dir) {
 
 						// Sanitize the HTML
 						template_obj.contents = rawHtml;
-
-						// const md = new MarkdownIt();
-						// template_obj.contents = md.render(template_obj.__content);
-						//template_obj.contents = marked.parse(template_obj.__content);
 						delete template_obj.__content;
 						obj = {...obj, ...template_obj};
 					} catch (error) {
@@ -541,7 +537,7 @@ export function Gondola(dir) {
 					try {
 						const {default: defaultFunc} = await import(obj.origin);
 						obj.contents = defaultFunc({data: data, collections: collections, context: obj});
-						obj.type ? obj.type = obj.type : obj.type = 'page';
+						// obj.type ? obj.type = obj.type : obj.type = 'page';
 					} catch (error) {
 						console.error(`ERROR importing default function at ${obj.origin}:`, error);
 					}
@@ -560,7 +556,7 @@ export function Gondola(dir) {
 					if (template_obj) {
 						try {
 							const md = new MarkdownIt({
-								html: true  // Enable HTML tags in Markdown
+								html: true
 							});
 
 							// Render Markdown to HTML
@@ -568,12 +564,8 @@ export function Gondola(dir) {
 
 							// Sanitize the HTML
 							template_obj.contents = rawHtml;
-							// const md = new MarkdownIt();
-							// template_obj.contents = md.render(template_obj.__content);
-							//template_obj.contents = marked.parse(template_obj.__content);
 							delete template_obj.__content;
 							obj = {...obj, ...template_obj};
-							obj.type ? obj.type = obj.type : obj.type = 'page';
 						} catch (error) {
 							console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
 						}
