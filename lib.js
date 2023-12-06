@@ -472,17 +472,18 @@ export function Gondola(dir) {
 							return new_objs;
 						}
 
-						set.actions === "paginate" ? files = remedyFiles(files, paginate(set))
-						: set.actions === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
+						set.actions === ["paginate"] ? files = remedyFiles(files, paginate(set))
+						: set.actions === ["paginateGroups"] ? files = remedyFiles(files, paginateGroups(set))
 						: console.error(`ERROR: There is no function for "${set.actions}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
 					}
 
-					function runActions(obj) {
-						const list = obj.actions;
-						list.map(set => {
-							set.name = obj.name;
-							runAction(set);
-						})
+					function runActions(collection) {
+						const list = collection.actions;
+						list.forEach(action => {
+							let collection.actions = []
+							collection.actions.push(action);
+							runAction(collection);
+						});
 					}
 
 					typeof collection.actions === 'string' || Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection)
