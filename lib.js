@@ -330,6 +330,11 @@ export function Gondola(dir) {
 								modified_files = sortCollection(modified_files, set);	
 							}
 
+							modified_files = modified_files.map(file => {
+								file.type = "page";
+								return file;
+							});
+
 							// if (set.replaceGlobal !== false || !set.replaceGlobal) {
 							// 	Object.entries(collections).map(([key, value]) => {
 							// 		if (key === set.name) {
