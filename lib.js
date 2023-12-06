@@ -299,7 +299,7 @@ export function Gondola(dir) {
 		if (settings.collect) {
 			if (Array.isArray(settings.collect)) {
 				settings.collect.map(collection => {
-					function runAction(set) {
+					function runAction(set, action) {
 						const dirPath = set.path;
 
 						function getCollectionFiles(collections, set) {
@@ -472,20 +472,18 @@ export function Gondola(dir) {
 							return new_objs;
 						}
 
-						set.actions === ["paginate"] ? files = remedyFiles(files, paginate(set))
-						: set.actions === ["paginateGroups"] ? files = remedyFiles(files, paginateGroups(set))
-						: console.error(`ERROR: There is no function for "${set.actions}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
+						action === "paginate" ? files = remedyFiles(files, paginate(set))
+						: action === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
+						: console.error(`ERROR: There is no function for "${action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
 					}
 
 					function runActions(collection) {
 						collection.actions.forEach(action => {
-							collection.actions = []
-							collection.actions.push(action);
-							runAction(collection);
+							runAction(collection, action);
 						});
 					}
 
-					typeof collection.actions === 'string' || Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection)
+					typeof collection.actions === 'string' || Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection, collection.actions[0])
 					: Array.isArray(collection.actions) ? runActions(collection)
 					: console.error(`ERROR: Your collection "${collection.collection}" needs at least one action attached to it. If using ONE action, return a string OR an Array with one item. If using MULTIPLE actions, return an Array.`)
 				})
