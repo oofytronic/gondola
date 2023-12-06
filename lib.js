@@ -472,9 +472,9 @@ export function Gondola(dir) {
 							return new_objs;
 						}
 
-						set.action === "paginate" ? files = remedyFiles(files, paginate(set))
-						: set.action === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
-						: console.error(`ERROR: There is no function for "${set.action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
+						set.actions === "paginate" ? files = remedyFiles(files, paginate(set))
+						: set.actions === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
+						: console.error(`ERROR: There is no function for "${set.actions}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
 					}
 
 					function runActions(obj) {
@@ -487,7 +487,7 @@ export function Gondola(dir) {
 
 					typeof collection.actions === 'string' || Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection)
 					: Array.isArray(collection.actions) ? runActions(collection)
-					: console.error(`ERROR: Your collection "${collection.name}" needs at least one action attached to it. If using ONE action, return a string OR an Array with one item. If using MULTIPLE actions, return an Array.`)
+					: console.error(`ERROR: Your collection "${collection.collection}" needs at least one action attached to it. If using ONE action, return a string OR an Array with one item. If using MULTIPLE actions, return an Array.`)
 				})
 			} else if (typeof settings.collect === 'string') {
 				console.error(`ERROR: settings.collect should be an array:`, error);
