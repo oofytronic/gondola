@@ -396,6 +396,8 @@ export function Gondola(dir) {
 										href: params
 									}
 
+
+
 									return new_page;
 								});
 
@@ -537,7 +539,6 @@ export function Gondola(dir) {
 					try {
 						const {default: defaultFunc} = await import(obj.origin);
 						obj.contents = defaultFunc({data: data, collections: collections, context: obj});
-						// obj.type ? obj.type = obj.type : obj.type = 'page';
 					} catch (error) {
 						console.error(`ERROR importing default function at ${obj.origin}:`, error);
 					}
