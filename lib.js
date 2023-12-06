@@ -237,11 +237,35 @@ export function Gondola(dir) {
 	function setCollections({settings, files, data} = {}) {
 		let collections = {};
 
-		// AVAILABLE TO ALL COLLECTIONS
-		/*
-		* sort
-		* filter
-		*/
+		// COLLECTION MODS
+		function sortCollection(files, set) {
+			let sorted_files = files.map(file => {
+				if (set.sort.by === "date" || !set.sort.by) {
+					if (set.sort.format === "mmddyyyy" || !set.sort.format) {
+						const dateParts = file.date.split(/-|\//); // - OR /
+						
+						const month = parseInt(dateParts[0], 10) - 1;
+						const day = parseInt(dateParts[1], 10);
+						const year = parseInt(dateParts[2], 10);
+						file.date = new Date(year, month, day);
+					}
+				}
+				
+				return file;
+			})
+
+			if (set.sort.order === "newest" || !set.sort.order) {
+				sorted_files = sorted_files.toSorted((a, b) => b.date.getTime() - a.date.getTime());
+			}
+
+			if (set.sort.order === "oldest") {
+				sorted_files = sorted_files.toSorted((a, b) => a.date.getTime() - b.date.getTime());
+			}
+
+			return sorted_files;
+		}
+
+		// function filterCollection(files, set) {};
 
 		// COLLECTION FROM FILES
 		files
@@ -277,52 +301,59 @@ export function Gondola(dir) {
 				settings.collect.map(collection => {
 					function runAction(set) {
 						const dirPath = set.path;
-						// Results to Files
-						function paginate(set) {
-							let paginated_files;
+
+						function getCollectionFiles(collections, set) {
+							let collection_files;
 
 							Object.entries(collections).map(([key, value]) => {
-								if (key === set.name) {
-									paginated_files = collections[key];
+								if (key === set.collection) {
+									collection_files = collections[key];
 								}
 							});
 
-							let modified_files = paginated_files.map(file => {
+							return collection_files.map(file => {
 								const slug = decipherSlug(file, set.slug);
 								file.path = path.join(`${set.path}/${slug}`);
 								file.state = !file.state ? set.state : file.state;
 								file.layout = !file.layout ? set.layout : file.layout;
 								return file;
-							})
+							});
+						}
+
+						// ACTIONS
+						function paginate(set) {
+							// Get files from collections
+							let modified_files = getCollectionFiles(collections, set);
 
 							// SORT
 							if (set.sort) {
-								modified_files = modified_files.map(file => {
-									if (set.sort.by === "date" || !set.sort.by) {
-										if (set.sort.format === "mmddyyyy" || !set.sort.format) {
-											const dateParts = file.date.split(/-|\//); // - OR /
-											
-											const month = parseInt(dateParts[0], 10) - 1;
-											const day = parseInt(dateParts[1], 10);
-											const year = parseInt(dateParts[2], 10);
-											file.date = new Date(year, month, day);
-										}
-									}
-									
-									return file;
-								})
+								modified_files = sortCollection(modified_files, set);	
+							}
 
-								if (set.sort.order === "newest" || !set.sort.order) {
-									modified_files = modified_files.toSorted((a, b) => b.date.getTime() - a.date.getTime());
-								}
+							// if (set.replaceGlobal !== false || !set.replaceGlobal) {
+							// 	Object.entries(collections).map(([key, value]) => {
+							// 		if (key === set.name) {
+							// 			collections[key] = modified_files;
+							// 		}
+							// 	});
+							// }
 
-								if (set.sort.order === "oldest") {
-									modified_files = modified_files.toSorted((a, b) => a.date.getTime() - b.date.getTime());
-								}
+							return modified_files;
+						}
+
+						function paginateGroups(set) {
+							// Get files from collections
+							let modified_files = getCollectionFiles(collections, set);
+
+							// SORT
+							if (set.sort) {
+								modified_files = sortCollection(modified_files, set);	
 							}
 
 							// SIZE
-							if (set.size) {
+							if (!set.size) {
+								console.error(`ERROR: You need to set a SIZE for ${set.collection}.`);
+							} else {
 								// DEFAULTS
 								let iterateWith;
 								let startAt;
@@ -410,79 +441,6 @@ export function Gondola(dir) {
 								modified_files = new_pages;
 							}
 
-							if (set.toGlobal === true) {
-								Object.entries(collections).map(([key, value]) => {
-									if (key === set.name) {
-										collections[key] = modified_files;
-									}
-								});
-							}
-
-							// if (idk) {
-							// 	const new_pages = modified_files.map(file => {
-							// 		const position = modified_files.indexOf(file);
-							// 		let n = modified_files.length - 1;
-
-							// 		const hrefs = [];
-
-							// 		function iterate(n){
-							// 			if (n !== 0) {
-							// 				hrefs.push(`${dirPath}/${n}`);
-							// 				n = n-1;
-							// 				iterate(n);
-							// 			} else {
-							// 				hrefs.push(`${dirPath}`);
-							// 				return
-							// 			}
-							// 		}
-
-							// 		iterate(n);
-
-							// 		const sortedHrefs = hrefs.sort();
-
-							// 		const lastItem = n;
-							// 		let params = {}
-							// 		if (position !== 0 && position !== lastItem) {
-							// 			params = {
-							// 				next: `${dirPath}/${position + 1}`,
-							// 				previous: `${dirPath}/${position - 1}`,
-							// 				first: `${dirPath}`,
-							// 				last: `${dirPath}/${lastItem}`,
-							// 			}
-							// 		} else if (position === 0) {
-							// 			params = {
-							// 				next: `${dirPath}/${position + 1}`,
-							// 				previous: undefined,
-							// 				first: undefined,
-							// 				last: `${dirPath}/${lastItem}`,
-							// 			}
-							// 		} else if (position === lastItem) {
-							// 			params = {
-							// 				next: undefined,
-							// 				previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
-							// 				first: `${dirPath}`,
-							// 				last: undefined,
-							// 			}
-							// 		}
-
-							// 		const new_page = {
-							// 			name: file.name,
-							// 			path: file.path,
-							// 			type: 'page',
-							// 			state: set.state,
-							// 			layout: set.layout,
-							// 			meta: set.meta,
-							// 			data: file,
-							// 			hrefs: sortedHrefs,
-							// 			href: params
-							// 		}
-
-							// 		return new_page;
-							// 	});
-
-							// 	return new_pages;
-							// }
-
 							return modified_files;
 						}
 
@@ -515,7 +473,8 @@ export function Gondola(dir) {
 						}
 
 						set.action === "paginate" ? files = remedyFiles(files, paginate(set))
-						: console.error(`ERROR: There is no function for "${set.action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, organize(coming soon)]`);
+						: set.action === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
+						: console.error(`ERROR: There is no function for "${set.action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
 					}
 
 					function runActions(obj) {
