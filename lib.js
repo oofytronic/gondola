@@ -876,6 +876,7 @@ export function Gondola(dir) {
 				case '.jpg': return 'image/jpeg';
 				case '.jpeg': return 'image/jpeg';
 				case '.gif': return 'image/gif';
+				case '.svg': return 'image/svg';
 				default: return 'text/plain';
 			}
 		}
