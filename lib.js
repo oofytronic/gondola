@@ -123,12 +123,15 @@ export function Gondola(dir) {
 
 			if (ext === "js") {
 				try {
-					const {config: configFunc} = await import(obj.origin)
-					obj = {...obj, ...configFunc()};
+		            const importedModule = await import(obj.origin);
 
-				} catch (error) {
-					console.error(`ERROR finding or using function config() at ${obj.origin}`, error)
-				}
+		            // Check if 'config' function exists in the imported module
+		            if (typeof importedModule.config === 'function') {
+		                obj = { ...obj, ...importedModule.config() };
+		            }
+		        } catch (error) {
+		            console.error(`ERROR processing JS file at ${obj.origin}`, error);
+		        }
 			}
 
 			if (ext === "md") {
@@ -177,7 +180,11 @@ export function Gondola(dir) {
 					}
 				}
 
-				obj.data = data_obj;
+				if (data_obj && data_obj.collections) {
+			        obj = {...obj, ...data_obj};
+			    } else {
+			    	obj.data = data_obj;
+			    }
 			}
 
 			files.push(obj);
@@ -189,7 +196,7 @@ export function Gondola(dir) {
 			const filtered_entries = file_entries
 				.filter(entry => !settings.ignore.includes(entry))
 				.filter(entry => !settings.pass.includes(entry))
-				.filter(entry => entry !== settings.includes)
+				// .filter(entry => entry !== settings.includes)
 				.filter(entry => entry !== settings.output)
 				.filter(entry => !entry.startsWith('.'))
 				.map(async entry => {
@@ -222,11 +229,11 @@ export function Gondola(dir) {
 			try {
 				if (file.data) {
 					const data_key = file.name.split('.')[0];
-					
+
 					data[data_key] = file.data;
 				}
 			} catch (error) {
-				console.error(`ERROR: Could not pull data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);	
+				console.error(`ERROR: Could not pull data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);
 			}
 		});
 
@@ -243,14 +250,14 @@ export function Gondola(dir) {
 				if (set.sort.by === "date" || !set.sort.by) {
 					if (set.sort.format === "mmddyyyy" || !set.sort.format) {
 						const dateParts = file.date.split(/-|\//); // - OR /
-						
+
 						const month = parseInt(dateParts[0], 10) - 1;
 						const day = parseInt(dateParts[1], 10);
 						const year = parseInt(dateParts[2], 10);
 						file.date = new Date(year, month, day);
 					}
 				}
-				
+
 				return file;
 			})
 
@@ -272,7 +279,7 @@ export function Gondola(dir) {
 		.filter(file => file.collections)
 		.map(file => {
 			function pushToCollections(tag) {
-				if (!collections.hasOwnProperty(tag)) { 
+				if (!collections.hasOwnProperty(tag)) {
 					collections[tag] = [];
 					collections[tag].push(file);
 				} else {
@@ -316,6 +323,7 @@ export function Gondola(dir) {
 								file.path = path.join(`${set.path}/${slug}`);
 								file.state = !file.state ? set.state : file.state;
 								file.layout = !file.layout ? set.layout : file.layout;
+
 								return file;
 							});
 						}
@@ -327,7 +335,7 @@ export function Gondola(dir) {
 
 							// SORT
 							if (set.sort) {
-								modified_files = sortCollection(modified_files, set);	
+								modified_files = sortCollection(modified_files, set);
 							}
 
 							modified_files = modified_files.map(file => {
@@ -352,7 +360,7 @@ export function Gondola(dir) {
 
 							// SORT
 							if (set.sort) {
-								modified_files = sortCollection(modified_files, set);	
+								modified_files = sortCollection(modified_files, set);
 							}
 
 							// SIZE
@@ -375,7 +383,7 @@ export function Gondola(dir) {
 
 								const new_pages = chunked_data.map(arr => {
 									const position = chunked_data.indexOf(arr);
-									
+
 
 									// Get page path
 									let pagePath;
@@ -383,9 +391,9 @@ export function Gondola(dir) {
 
 									// create hrefs
 									let n = chunked_data.length - 1;
-									
+
 									const hrefs = [];
-									
+
 									function iterate(n){
 										if (n !== 0) {
 											hrefs.push(`${dirPath}/${n}`);
@@ -396,9 +404,9 @@ export function Gondola(dir) {
 											return
 										}
 									}
-									
+
 									iterate(n);
-									
+
 									const sortedHrefs = hrefs.sort();
 
 									const lastItem = n;
@@ -550,23 +558,99 @@ export function Gondola(dir) {
 
 	/** Creates an html layout which typically houses the contents of specified file object. **/
 	function setLayouts({settings, files, data, collections} = {}) {
-		return Promise.all(files.map(async obj => {
-				if (obj.layout) {
-					const full_path = path.resolve(dir, obj.layout)
+		// async function applyLayouts(file, files) {
+		//     if (!file.layout) {
+		//         // No further layouts to apply
+		//         return file;
+		//     }
 
-					try {
-						const {default: defaultFunc} = await import(full_path);
-						obj.contents = defaultFunc({data: data, collections: collections, context: obj})
-					} catch (error) {
-						console.error(`ERROR importing default function at ${full_path}:`, error);
-					}
-				}
+		//     // Get the path for the current layout
+		//     const layoutPath = path.resolve(dir, file.layout);
 
-				return obj;
-			})
-		).then(files => {
-			return {settings, files, data, collections}
-		});
+		//     try {
+		//         const {default: layoutFunc} = await import(layoutPath);
+
+		//         if (typeof layoutFunc === "function") {
+		//             // Apply the layout function
+		//             const updatedFile = layoutFunc({data: data, collections: collections, context: file});
+
+		//             // Find the next layout from the files array
+		//             const nextLayoutFile = files.find(f => f.path === updatedFile.layout);
+		//             if (nextLayoutFile) {
+		//                 // Recursive call with the next layout file
+		//                 return await applyLayouts(nextLayoutFile, files);
+		//             } else {
+		//                 // No further layouts found, return the updated file
+		//                 return updatedFile;
+		//             }
+		//         }
+		//     } catch (error) {
+		//         console.error(`Error applying layout from ${layoutPath}:`, error);
+		//     }
+
+		//     // In case of an error or no function found, return the original file
+		//     return file;
+		// }
+
+		async function applyLayouts(file) {
+		    if (!file.layout) {
+		        return file;
+		    }
+
+		    if (file.layout === "_includes/insights_page.js") {
+
+		    }
+
+		    // Get the path for the current layout
+		    // const layoutPath = path.resolve(dir, file.layout);
+
+		    // try {
+		    //     const {default: layoutFunc} = await import(layoutPath);
+		    //    	const updatedFile = layoutFunc({data: data, collections: collections, context: file});
+		    //     const nextLayoutFile = files.find(f => f.path === updatedFile.layout);
+
+		    //     if (nextLayoutFile) {
+	        //         // Recursive call with the next layout file
+	        //         return await applyLayouts(nextLayoutFile, files);
+	        //     } else {
+	        //         // No further layouts found, return the updated file
+	        //         return updatedFile;
+	        //     }
+		    // } catch (error) {
+		    //     console.error(`Error applying layout from ${layoutPath}:`, error);
+		    // }
+
+		    // // In case of an error or no function found, return the original file
+		    // return file;
+		}
+
+
+		return Promise.all(files.map(async file => {
+	        if (file.layout) {
+	            file.contents = await applyLayouts(file);
+	        }
+	        return file;
+	    })).then(files => {
+	        return { settings, files, data, collections };
+	    });
+
+		// return Promise.all(files.map(async obj => {
+		// 		if (obj.layout) {
+		// 			const full_path = path.resolve(dir, obj.layout)
+
+		// 			try {
+		// 				const {default: defaultFunc} = await import(full_path);
+		// 				obj.contents = defaultFunc({data: data, collections: collections, context: obj})
+		// 			} catch (error) {
+		// 				console.error(`ERROR importing default function at ${full_path}:`, error);
+		// 			}
+		// 		}
+
+		// 		return obj;
+		// 	})
+		// ).then(files => {
+		// 	return {settings, files, data, collections}
+		// });
 	}
 
 	// TOOLS
