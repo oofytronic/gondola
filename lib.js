@@ -511,7 +511,7 @@ export function Gondola(dir) {
 	/** Creates a contents key/value pair within the file object that houses the template for that file. **/
 	function setTemplates({settings, files, data, collections} = {}) {
 		return Promise.all(files.map(async obj => {
-				if (obj.ext === "js") {
+				if (obj.ext === "js" && obj.type !== "layout") {
 					try {
 						const {default: defaultFunc} = await import(obj.origin);
 						obj.contents = defaultFunc({data: data, collections: collections, context: obj});
@@ -557,100 +557,49 @@ export function Gondola(dir) {
 	}
 
 	/** Creates an html layout which typically houses the contents of specified file object. **/
-	function setLayouts({settings, files, data, collections} = {}) {
-		// async function applyLayouts(file, files) {
-		//     if (!file.layout) {
-		//         // No further layouts to apply
-		//         return file;
-		//     }
+	async function setLayouts({settings, files, data, collections} = {}) {
 
-		//     // Get the path for the current layout
-		//     const layoutPath = path.resolve(dir, file.layout);
-
-		//     try {
-		//         const {default: layoutFunc} = await import(layoutPath);
-
-		//         if (typeof layoutFunc === "function") {
-		//             // Apply the layout function
-		//             const updatedFile = layoutFunc({data: data, collections: collections, context: file});
-
-		//             // Find the next layout from the files array
-		//             const nextLayoutFile = files.find(f => f.path === updatedFile.layout);
-		//             if (nextLayoutFile) {
-		//                 // Recursive call with the next layout file
-		//                 return await applyLayouts(nextLayoutFile, files);
-		//             } else {
-		//                 // No further layouts found, return the updated file
-		//                 return updatedFile;
-		//             }
-		//         }
-		//     } catch (error) {
-		//         console.error(`Error applying layout from ${layoutPath}:`, error);
-		//     }
-
-		//     // In case of an error or no function found, return the original file
-		//     return file;
-		// }
-
-		async function applyLayouts(file) {
-		    if (!file.layout) {
-		        return file;
-		    }
-
-		    if (file.layout === "_includes/insights_page.js") {
-
-		    }
-
-		    // Get the path for the current layout
-		    // const layoutPath = path.resolve(dir, file.layout);
-
-		    // try {
-		    //     const {default: layoutFunc} = await import(layoutPath);
-		    //    	const updatedFile = layoutFunc({data: data, collections: collections, context: file});
-		    //     const nextLayoutFile = files.find(f => f.path === updatedFile.layout);
-
-		    //     if (nextLayoutFile) {
-	        //         // Recursive call with the next layout file
-	        //         return await applyLayouts(nextLayoutFile, files);
-	        //     } else {
-	        //         // No further layouts found, return the updated file
-	        //         return updatedFile;
-	        //     }
-		    // } catch (error) {
-		    //     console.error(`Error applying layout from ${layoutPath}:`, error);
-		    // }
-
-		    // // In case of an error or no function found, return the original file
-		    // return file;
-		}
-
-
-		return Promise.all(files.map(async file => {
-	        if (file.layout) {
-	            file.contents = await applyLayouts(file);
+	    async function applyLayout(file, files, data, collections) {
+	        if (!file.layout) {
+	            return file.contents; // No further layout to apply
 	        }
-	        return file;
-	    })).then(files => {
-	        return { settings, files, data, collections };
-	    });
 
-		// return Promise.all(files.map(async obj => {
-		// 		if (obj.layout) {
-		// 			const full_path = path.resolve(dir, obj.layout)
+	        const layoutPath = path.resolve(dir, file.layout);
 
-		// 			try {
-		// 				const {default: defaultFunc} = await import(full_path);
-		// 				obj.contents = defaultFunc({data: data, collections: collections, context: obj})
-		// 			} catch (error) {
-		// 				console.error(`ERROR importing default function at ${full_path}:`, error);
-		// 			}
-		// 		}
+	        try {
+	            const layoutFunc = (await import(layoutPath)).default;
+	            if (typeof layoutFunc !== 'function') {
+	                throw new Error(`Layout at ${layoutPath} does not export a default function`);
+	            }
 
-		// 		return obj;
-		// 	})
-		// ).then(files => {
-		// 	return {settings, files, data, collections}
-		// });
+	            const updatedFileContents = await layoutFunc({data: data, collections: collections, context: file});
+	            file.contents = updatedFileContents;
+
+	            // Find the next layout from the files array
+	            const nextLayoutFile = files.find(f => f.path === file.layout);
+
+	  			if (nextLayoutFile.layout) {
+	  				file.layout = nextLayoutFile.layout;
+	  				return await applyLayout(file, files, data, collections); // Recursive call
+	  			} else {
+	  				return file.contents;
+	  			}
+	        } catch (error) {
+	            console.error(`Error applying layout from ${layoutPath}:`, error);
+	            return file; // Return original file in case of error
+	        }
+	    }
+
+	    const updatedFiles = await Promise.all(
+	        files.map(async file => {
+	            if (file.type === 'page') {
+	                file.contents = await applyLayout(file, files, data, collections);
+	            }
+	            return file;
+	        })
+	    );
+
+	    return {settings, files: updatedFiles, data, collections};
 	}
 
 	// TOOLS
