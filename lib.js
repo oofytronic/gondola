@@ -163,27 +163,57 @@ export function Gondola(dir) {
 			}
 
 			if (ext === "json") {
-				let data_string;
-				let data_obj;
+			    let data_string;
+			    let data_obj;
 
-				try {
-					data_string = await Bun.file(obj.path).text();
-				} catch (error) {
-					console.error(`ERROR getting text from ${obj.path}.`, error)
-				}
+			    try {
+			        data_string = await Bun.file(obj.path).text();
+			    } catch (error) {
+			        console.error(`ERROR getting text from ${obj.path}.`, error);
+			    }
 
-				if (data_string) {
-					try {
-						data_obj = JSON.parse(data_string);
-					} catch (error) {
-						console.error(`ERROR parsing JSON from ${obj.path}`, error)
-					}
-				}
+			    if (data_string) {
+			        try {
+			            data_obj = JSON.parse(data_string);
 
-				if (data_obj && data_obj.collections) {
+			            // Process Markdown content in JSON data recursively
+			            const md = new MarkdownIt({ html: true });
+			            function processMarkdownContent(obj) {
+			                if (Array.isArray(obj)) {
+			                    // If it's an array, process each item
+			                    obj.forEach(item => processMarkdownContent(item));
+			                } else if (obj && typeof obj === 'object') {
+			                    // If it's an object, process each key
+			                    for (let key in obj) {
+			                        if (obj.hasOwnProperty(key)) {
+
+			                            // Check for keys ending with '_md'
+			                            if (key.endsWith('_md')) {
+			                                obj[key] = md.render(obj[key]);
+			                            }
+
+			                            // Check for 'g_format' property set to 'markdown'
+			                            if (obj[key] && typeof obj[key] === 'object' && obj[key].g_format === 'markdown' || obj[key].g_format === 'md') {
+			                                obj[key].body = md.render(obj[key].body);
+			                            }
+
+			                            // Recursive call for nested objects and arrays
+			                            processMarkdownContent(obj[key]);
+			                        }
+			                    }
+			                }
+			            }
+
+			            processMarkdownContent(data_obj);
+			        } catch (error) {
+			            console.error(`ERROR parsing JSON from ${obj.path}`, error);
+			        }
+			    }
+
+			    if (data_obj && data_obj.collections) {
 			        obj = {...obj, ...data_obj};
 			    } else {
-			    	obj.data = data_obj;
+			        obj.data = data_obj;
 			    }
 			}
 
