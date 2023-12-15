@@ -40,51 +40,53 @@ export function Gondola(dir) {
 	/** Combines the default settings with user settings to present the overall preferences as an object that is referenced when making generation decisions. **/
 	async function getSettings() {
 		try {
-			let default_settings = {
+			let defaultSettings = {
 				starter: '',
 				output: '_site',
 				includes: '_includes',
+				components: '_components',
 				drafts: '_drafts',
+				data: '_data',
 				ignore: [
 					'.git',
+					'.gitignore',
 					'node_modules',
 					'package.json',
 					'bun.lockb',
 					'gondola.js',
 					'package-lock.json'
 				],
-				pass: [],
-				data: '_data'
+				pass: []
 			};
 
-			let user_settings;
-			let joined_settings = {};
+			let userSettings;
+			let joinedSettings = {};
 
 			if (fs.existsSync(path.resolve(dir, 'gondola.js'))) {
 				const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
-				user_settings = defaultFunc();
+				userSettings = defaultFunc();
 			} else {
-				user_settings = {};
+				userSettings = {};
 			}
 
-			Object.entries(user_settings).forEach(([key, value]) => {
+			Object.entries(userSettings).forEach(([key, value]) => {
 				if (Array.isArray(value)) {
-					const default_array = Object.entries(default_settings);
-					const match = default_array.find(([default_key, default_value]) => {
+					const defaultArray = Object.entries(defaultSettings);
+					const match = defaultArray.find(([default_key, default_value]) => {
 						return default_key === key
 					});
 
 					if (match !== undefined) {
-						joined_settings[key] = [...match[1], ...value]
+						joinedSettings[key] = [...match[1], ...value]
 					} else {
-						joined_settings[key] = value
+						joinedSettings[key] = value
 					}
 				} else {
-					joined_settings[key] = value
+					joinedSettings[key] = value
 				}
 			});
 
-			return {...default_settings, ...joined_settings};
+			return {...defaultSettings, ...joinedSettings};
 		} catch (error) {
 			console.error(`ERROR: Could not get "settings" from "gondola.js". Please make sure the following is addressed:
 				- The function within gondola.js is the 'default' function.
@@ -129,27 +131,27 @@ export function Gondola(dir) {
 			}
 
 			if (ext === "md") {
-				let template_obj;
+				let templateObj;
 
 				try {
-					template_obj = yaml_front.loadFront(await Bun.file(obj.origin).text());
+					templateObj = yaml_front.loadFront(await Bun.file(obj.origin).text());
 				} catch (error) {
 					console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
 				}
 
-				if (template_obj) {
+				if (templateObj) {
 					try {
 						const md = new MarkdownIt({
 							html: true
 						});
 
-						// Render Markdown to HTML
-						let rawHtml = md.render(template_obj.__content);
+						// Render Markdown to HTMLtemplateObj
+						let rawHtml = md.render(templateObj.__content);
 
 						// Sanitize the HTML
-						template_obj.contents = rawHtml;
-						delete template_obj.__content;
-						obj = {...obj, ...template_obj};
+						templateObj.contents = rawHtml;
+						delete templateObj.__content;
+						obj = {...obj, ...templateObj};
 					} catch (error) {
 						console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
 					}
@@ -157,18 +159,18 @@ export function Gondola(dir) {
 			}
 
 			if (ext === "json") {
-			    let data_string;
-			    let data_obj;
+			    let dataString;
+			    let dataObj;
 
 			    try {
-			        data_string = await Bun.file(obj.path).text();
+			        dataString = await Bun.file(obj.path).text();
 			    } catch (error) {
 			        console.error(`ERROR getting text from ${obj.path}.`, error);
 			    }
 
-			    if (data_string) {
+			    if (dataString) {
 			        try {
-			            data_obj = JSON.parse(data_string);
+			            dataObj = JSON.parse(dataString);
 
 			            // Process Markdown content in JSON data recursively
 			            const md = new MarkdownIt({ html: true });
@@ -198,16 +200,16 @@ export function Gondola(dir) {
 			                }
 			            }
 
-			            processMarkdownContent(data_obj);
+			            processMarkdownContent(dataObj);
 			        } catch (error) {
 			            console.error(`ERROR parsing JSON from ${obj.path}`, error);
 			        }
 			    }
 
-			    if (data_obj && data_obj.collections) {
-			        obj = {...obj, ...data_obj};
+			    if (dataObj && dataObj.collections) {
+			        obj = {...obj, ...dataObj};
 			    } else {
-			        obj.data = data_obj;
+			        obj.data = dataObj;
 			    }
 			}
 
@@ -220,7 +222,6 @@ export function Gondola(dir) {
 			const filtered_entries = file_entries
 				.filter(entry => !settings.ignore.includes(entry))
 				.filter(entry => !settings.pass.includes(entry))
-				// .filter(entry => entry !== settings.includes)
 				.filter(entry => entry !== settings.output)
 				.filter(entry => !entry.startsWith('.'))
 				.map(async entry => {
@@ -252,12 +253,12 @@ export function Gondola(dir) {
 		files.forEach(file => {
 			try {
 				if (file.data) {
-					const data_key = file.name.split('.')[0];
+					const dataKey = file.name.split('.')[0];
 
-					data[data_key] = file.data;
+					data[dataKey] = file.data;
 				}
 			} catch (error) {
-				console.error(`ERROR: Could not pull data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);
+				console.error(`ERROR: Could not get data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);
 			}
 		});
 
@@ -540,33 +541,33 @@ export function Gondola(dir) {
 						const {default: defaultFunc} = await import(obj.origin);
 						obj.contents = defaultFunc({data: data, collections: collections, context: obj});
 					} catch (error) {
-						console.error(`ERROR importing default function at ${obj.origin}:`, error);
+						console.error(`ERROR importing default function at ${obj.origin}.`);
 					}
 				}
 
 
 				if (obj.ext === "md") {
-					let template_obj;
+					let templateObj;
 
 					try {
-						template_obj = yaml_front.loadFront(await Bun.file(obj.origin).text());
+						templateObj = yaml_front.loadFront(await Bun.file(obj.origin).text());
 					} catch (error) {
 						console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
 					}
 
-					if (template_obj) {
+					if (templateObj) {
 						try {
 							const md = new MarkdownIt({
 								html: true
 							});
 
 							// Render Markdown to HTML
-							let rawHtml = md.render(template_obj.__content);
+							let rawHtml = md.render(templateObj.__content);
 
 							// Sanitize the HTML
-							template_obj.contents = rawHtml;
-							delete template_obj.__content;
-							obj = {...obj, ...template_obj};
+							templateObj.contents = rawHtml;
+							delete templateObj.__content;
+							obj = {...obj, ...templateObj};
 						} catch (error) {
 							console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
 						}
@@ -599,18 +600,17 @@ export function Gondola(dir) {
 	            const updatedFileContents = await layoutFunc({data: data, collections: collections, context: file});
 	            file.contents = updatedFileContents;
 
-	            // Find the next layout from the files array
 	            const nextLayoutFile = files.find(f => f.path === file.layout);
 
 	  			if (nextLayoutFile.layout) {
 	  				file.layout = nextLayoutFile.layout;
-	  				return await applyLayout(file, files, data, collections); // Recursive call
+	  				return await applyLayout(file, files, data, collections); // Recursion
 	  			} else {
 	  				return file.contents;
 	  			}
 	        } catch (error) {
-	            console.error(`Error applying layout from ${layoutPath}:`, error);
-	            return file; // Return original file in case of error
+	            console.error(`Error applying layout from ${layoutPath}.`);
+	            return file;
 	        }
 	    }
 
@@ -792,7 +792,7 @@ export function Gondola(dir) {
 			try {
 				use(chain, settings);
 			} catch (error) {
-				console.error(`ERROR using tool:`, error);
+				console.error(`ERROR using Plugin. Check "settings.use"`);
 			}
 		}
 
@@ -805,8 +805,7 @@ export function Gondola(dir) {
 				if (file.state === 'publish') {
 					let destinationPath;
 
-					if (file.path === '' || file.path === 'home.js' || file.path === 'index.js' || file.path === 'index.md' || file.path === 'home.md') {
-						// Handle the case when file.path is an empty string
+					if (file.path === '' || file.path === 'home.js' || file.path === 'index.js' || file.path === 'index.md' || file.path === 'home.md' || file.path === 'index.json') {
 						destinationPath = '';
 					} else {
 						// Parse the file path to get the directory and name without extension
@@ -821,9 +820,12 @@ export function Gondola(dir) {
 						destinationPath = destinationPath.charAt(0) !== '/' ? `/${destinationPath}` : destinationPath;
 					}
 
-					// Add '/index.html' to the path
-					const destination = `${output}${destinationPath}/index.html`;
-
+					if (!settings.coolUrls) {
+						const destination = `${output}${destinationPath}/index.html`;
+					} else if (settings.coolUrls === false) {
+						const destination = `${output}${destinationPath}.html`;
+					}
+					
 					// Create directory and write file
 					const destDir = path.parse(destination).dir;
 					fs.mkdirSync(destDir, {recursive: true});
