@@ -5,12 +5,11 @@ Gondola is a static site generator, PWA builder and content engine for various w
 
 ## Overview
 - **Language:** Gondola is written in JavaScript with [Bun](https://bun.sh/docs).
-- **Templating:** Gondola uses JavaScript as a templating system. Use any JS within a default function to create your template. 
-- **Content Creation:** Gondola converts Markdown files into webpages and looks for Markdown within JSON files as well.
-- **Data**: Gondola reads JSON files and stores the contents as data.
+- **Templating:** Gondola uses JavaScript as the primary templating system. Use any JS within a default function to create your template. Gondola converts Markdown files into webpages. It also looks for Markdown within JSON files making JSON capable of templating as well.
+- **Data**: Gondola reads JSON files and stores the contents as data. that can be accessed within templates and layouts.
 - **Collections:** Gondola works with collections of content by finding every instance of a collection, housing it in a global *"collections"* object and running processes based on a concept called "Collection Actions" to determine what happens to a collection of files or data.
-- **Layouts**: Gondola makes use of layouts and layout nesting.
-- **Apps**: Gondola makes it very easy to create a PWA within the gondola.js file. It encourages PWA creation and will automatically look for the prerequisties for a PWA when generating and if it finds them your build will be stored in an "\_app" directory.
+- **Layouts**: Gondola makes use of layouts and layout nesting for easy management of resuable content.
+- **Apps**: Gondola makes it very easy to structure a PWA within the gondola.js file. It encourages PWA creation and will automatically look for the prerequisties of a PWA when generating, and if it finds them your build will be stored in an "\_app" directory. This functionality can be turned off as well.
 - **Configuration:** Gondola does NOT require configuration to work. However, most developers will need to use the *gondola.js* config file to create desired websites and web apps.
 - **Workflow:** Gondola reads your file system starting at the directory it is installed into by default. It turns each file it finds into a *"context"* and that *"context"* is made available when writing templates along with a global *"data"* object and a global *"collections"* object. You can use *{data, collections, context}* in your JavaScript template functions.
 
