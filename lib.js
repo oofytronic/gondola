@@ -12,13 +12,7 @@ import * as yaml_front from "yaml-front-matter";
 
 
 export function Gondola(dir) {
-	/**
-	* Generates a URL-friendly slug based on specified parameters in a line.
-	*
-	* @param {Object} data - The data object containing key-value pairs that the function uses to construct the slug.
-	* @param {string} line - A string representing the parameters used to create the slug, separated by '--'. Each parameter should correspond to a key in the data object.
-	* @returns {string} A URL-friendly slug created from the specified parameters. If a parameter is not a string or an error occurs, it will return an empty string for that part.
-	**/
+	/** Generates a URL-friendly slug based on specified parameters in a line. **/
 	function decipherSlug(data, line) {
 		const slugParams = line.split('--');
 		const slug = slugParams.map(param => {
