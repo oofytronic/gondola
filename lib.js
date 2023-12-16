@@ -8,7 +8,7 @@ import { serve as bunServe } from 'bun';
 
 // EXTERNAL
 import MarkdownIt from 'markdown-it';
-import * as yaml_front from "yaml-front-matter";
+import * as yamlFront from "yaml-front-matter";
 
 
 export function Gondola(dir) {
@@ -134,7 +134,7 @@ export function Gondola(dir) {
 				let templateObj;
 
 				try {
-					templateObj = yaml_front.loadFront(await Bun.file(obj.origin).text());
+					templateObj = yamlFront.loadFront(await Bun.file(obj.origin).text());
 				} catch (error) {
 					console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
 				}
@@ -550,7 +550,7 @@ export function Gondola(dir) {
 					let templateObj;
 
 					try {
-						templateObj = yaml_front.loadFront(await Bun.file(obj.origin).text());
+						templateObj = yamlFront.loadFront(await Bun.file(obj.origin).text());
 					} catch (error) {
 						console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
 					}
@@ -583,7 +583,6 @@ export function Gondola(dir) {
 
 	/** Creates an html layout which typically houses the contents of specified file object. **/
 	async function setLayouts({settings, files, data, collections} = {}) {
-
 	    async function applyLayout(file, files, data, collections) {
 	        if (!file.layout) {
 	            return file.contents; // No further layout to apply
@@ -594,7 +593,7 @@ export function Gondola(dir) {
 	        try {
 	            const layoutFunc = (await import(layoutPath)).default;
 	            if (typeof layoutFunc !== 'function') {
-	                throw new Error(`Layout at ${layoutPath} does not export a default function`);
+	                throw new Error(`ERROR: Layout at ${layoutPath} does not export a default function`);
 	            }
 
 	            const updatedFileContents = await layoutFunc({data: data, collections: collections, context: file});
@@ -609,7 +608,7 @@ export function Gondola(dir) {
 	  				return file.contents;
 	  			}
 	        } catch (error) {
-	            console.error(`Error applying layout from ${layoutPath}.`);
+	            console.error(`ERROR applying layout from ${layoutPath}.`);
 	            return file;
 	        }
 	    }
@@ -626,10 +625,9 @@ export function Gondola(dir) {
 	    return {settings, files: updatedFiles, data, collections};
 	}
 
-	// TOOLS
+	// PLUGINS
 	/** Creates a RSS feed based on a set collection within the settings object. **/
 	function setSyndication(settings, config, feed) {
-
 		// LOOK FOR TYPE: RSS, Atom, JSONfeed
 		let template;
 
@@ -772,7 +770,6 @@ export function Gondola(dir) {
 		});
 	}
 
-	// GENERATE
 	/** Creates an "output" of directories and files based on the result of a chain of functions. **/
 	async function gen() {
 		const start = Date.now();
@@ -782,7 +779,7 @@ export function Gondola(dir) {
 		// CHECK OUTPUT FOLDER
 		fs.existsSync(output) === false ? fs.mkdirSync(output) :
 		!settings.clean ? fs.rmSync(output, { recursive: true, force: true }) :
-		settings.clean === false ? console.log(`Building into current ${output}`) : console.log('building')
+		settings.clean === false ? console.log(`GONDOLA: Building into current ${output}`) : console.log('building')
 
 		// CHAIN
 		const chain = await setLayouts(await setTemplates(await setCollections(setData(await getFiles(settings, dir)))));
@@ -792,7 +789,7 @@ export function Gondola(dir) {
 			try {
 				use(chain, settings);
 			} catch (error) {
-				console.error(`ERROR using Plugin. Check "settings.use"`);
+				console.error(`ERROR using plugins. Check "settings.use"`);
 			}
 		}
 
@@ -855,24 +852,23 @@ export function Gondola(dir) {
 		console.log(`Built in ${total_time} seconds`);
 	}
 
-	// SERVE
 	/** Creates an http server. **/
 	async function serve(port) {
 	    const settings = await getSettings();
-    	const output_dir = path.join(dir, settings.output);
+    	const outputDir = path.join(dir, settings.output);
 
 		function getContentType(filePath) {
 			const extension = path.extname(filePath);
 			switch (extension) {
-				case '.html': return 'text/html';
-				case '.css': return 'text/css';
-				case '.js': return 'application/javascript';
-				case '.json': return 'application/json';
+				case '.html': return 'text/html; charset=utf-8';
+				case '.css': return 'text/css; charset=utf-8';
+				case '.js': return 'application/javascript; charset=utf-8';
+				case '.json': return 'application/json; charset=utf-8';
 				case '.png': return 'image/png';
 				case '.jpg': return 'image/jpeg';
 				case '.jpeg': return 'image/jpeg';
 				case '.gif': return 'image/gif';
-				case '.svg': return 'image/svg';
+				case '.svg': return 'image/svg+xml';
 				default: return 'text/plain';
 			}
 		}
@@ -880,38 +876,37 @@ export function Gondola(dir) {
 		bunServe({
 			fetch(req) {
 				try {
-					let url_path = new URL(req.url).pathname;
-					let file_path = path.join(output_dir, url_path);
+					let urlPath = new URL(req.url).pathname;
+					let filePath = path.join(outputDir, urlPath);
 
-					if (fs.existsSync(file_path) && fs.statSync(file_path).isDirectory()) {
-						file_path = path.join(file_path, 'index.html');
+					if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+						filePath = path.join(filePath, 'index.html');
 					}
 
-					if (fs.existsSync(file_path)) {
-						const contentType = getContentType(file_path);
+					if (fs.existsSync(filePath)) {
+						const contentType = getContentType(filePath);
 
-						return new Response(fs.readFileSync(file_path), {
+						return new Response(fs.readFileSync(filePath), {
 							headers: { 'Content-Type': contentType }
 						});
 					}
 
 					return new Response('File not found', { status: 404 });
 				} catch (error) {
-					console.error(`Error serving ${req.url}:`, error);
+					console.error(`SERVER: Error serving ${req.url}:`, error);
 					return new Response('Internal Server Error', { status: 500 });
 				}
 			},
 			port: port
 		});
-
-		console.log(`HTTP server running on http://localhost:${port}`);
-
-		// Open browser
 		const url = `http://localhost:${port}`;
+
+		console.log(`SERVER: Running on ${url}`);
+
 		const start = (process.platform == 'darwin' ? 'open' : process.platform == 'win32' ? 'start' : 'xdg-open');
 		exec(`${start} ${url}`, (err) => {
 			if (err) {
-				console.warn('SERVE: Failed to automatically open browser. Server is running. Manually open.');
+				console.warn(`SERVER: Failed to automatically open browser. Server is running. Manually open ${url}.`);
 			}
 		});
 	}
