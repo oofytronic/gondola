@@ -817,6 +817,8 @@ export function Gondola(dir) {
 						destinationPath = destinationPath.charAt(0) !== '/' ? `/${destinationPath}` : destinationPath;
 					}
 
+					let destination;
+					
 					if (!settings.coolUrls) {
 						const destination = `${output}${destinationPath}/index.html`;
 					} else if (settings.coolUrls === false) {
