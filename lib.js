@@ -818,11 +818,11 @@ export function Gondola(dir) {
 					}
 
 					let destination;
-					
+
 					if (!settings.coolUrls) {
-						const destination = `${output}${destinationPath}/index.html`;
+						destination = `${output}${destinationPath}/index.html`;
 					} else if (settings.coolUrls === false) {
-						const destination = `${output}${destinationPath}.html`;
+						destination = `${output}${destinationPath}.html`;
 					}
 					
 					// Create directory and write file
