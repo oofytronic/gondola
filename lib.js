@@ -19,17 +19,18 @@ export function Gondola(dir) {
 			if (typeof data[param] === 'string') {
 				try {
 					return data[param]
-						.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
-						.replace(/[^a-zA-Z0-9- ]/g, '') // Remove special characters except hyphens and spaces
+						.normalize('NFD') // Normalize to decompose combined graphemes
+						.replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+						.replace(/[^\w\- ]+/g, '') // Remove non-word chars except hyphens and spaces
+						.trim() // Remove leading and trailing spaces
 						.replace(/\s+/g, '-') // Replace spaces with hyphens
 						.replace(/-+/g, '-') // Replace multiple hyphens with a single one
-						.trim()
-						.toLowerCase();
+						.toLowerCase(); // Convert to lowercase
 				} catch (error) {
-					console.error(`ERROR: Could not use ${param} at ${line}`, error);
+					console.error(`ERROR: Could not use ${param} at ${line}.`);
 				}
 			} else {
-				console.error(`ERROR: ${data[param]} is not a 'string' at ${line}`);
+				console.error(`ERROR: ${data[param]} is not a 'string' at ${line}.`);
 			}
 			return '';
 		}).join('-');
@@ -37,7 +38,7 @@ export function Gondola(dir) {
 		return slug;
 	}
 
-	/** Combines the default settings with user settings to present the overall preferences as an object that is referenced when making generation decisions. **/
+	/** Combines the default settings with user settings **/
 	async function getSettings() {
 		try {
 			let defaultSettings = {
@@ -324,7 +325,7 @@ export function Gondola(dir) {
 
 			Array.isArray(file.collections) ? collectionFromArray(file.collections)
 			: typeof file.collections === 'string' ? pushToCollections(file.collections)
-			: console.error(`"collections:" needs to be a "String" or an "Array"`)
+			: console.error(`ERROR: "collections:" needs to be a "String" or an "Array"`)
 		});
 
 		// COLLECTION FROM SETTINGS
@@ -526,7 +527,7 @@ export function Gondola(dir) {
 					: console.error(`ERROR: Your collection "${collection.collection}" needs at least one action attached to it. If using ONE action, return a string OR an Array with one item. If using MULTIPLE actions, return an Array.`)
 				})
 			} else if (typeof settings.collect === 'string') {
-				console.error(`ERROR: settings.collect should be an array:`, error);
+				console.error(`ERROR: "settings.collect" should be an Array.`);
 			}
 		}
 
@@ -625,7 +626,6 @@ export function Gondola(dir) {
 	    return {settings, files: updatedFiles, data, collections};
 	}
 
-	// PLUGINS
 	/** Creates a RSS feed based on a set collection within the settings object. **/
 	function setSyndication(settings, config, feed) {
 		// LOOK FOR TYPE: RSS, Atom, JSONfeed
