@@ -27,10 +27,10 @@ export function Gondola(dir) {
 						.replace(/-+/g, '-') // Replace multiple hyphens with a single one
 						.toLowerCase(); // Convert to lowercase
 				} catch (error) {
-					console.error(`ERROR: Could not use ${param} at ${line}.`);
+					console.error(`Error: Could not use ${param} at ${line}.`);
 				}
 			} else {
-				console.error(`ERROR: ${data[param]} is not a 'string' at ${line}.`);
+				console.error(`Error: ${data[param]} is not a 'string' at ${line}.`);
 			}
 			return '';
 		}).join('-');
@@ -38,6 +38,7 @@ export function Gondola(dir) {
 		return slug;
 	}
 
+	/* Parses dates using a designated format */
 	function parseDate(dateString, format) {
 		let dateParts, year, month, day;
 
@@ -87,7 +88,7 @@ export function Gondola(dir) {
 				}
 			}
 		} catch(error) {
-			console.error(`ERROR: ${error}. Please check Gondola's documentation to ensure your format designation is written correctly. Gondola checks dates for "-" or "/". If it doesn't find these it assumes the string is written without any delimiters.`)
+			console.error(`${error}. Please check Gondola's documentation to ensure your format designation is written correctly. Gondola checks dates for "-" or "/". If it doesn't find these it assumes the string is written without any delimiters.`)
 		}
 
 		return new Date(year, month, day);
@@ -381,215 +382,219 @@ export function Gondola(dir) {
 
 		// COLLECTION FROM SETTINGS
 		if (settings.collect) {
-			if (Array.isArray(settings.collect)) {
-				settings.collect.map(collection => {
-					function runAction(set, action) {
-						const dirPath = set.path;
+			try {
+				if (Array.isArray(settings.collect)) {
+					settings.collect.map(collection => {
+						function runAction(set, action) {
+							const dirPath = set.path;
 
-						function getCollectionFiles(collections, set) {
-							let collection_files;
+							function getCollectionFiles(collections, set) {
+								let collection_files;
 
-							Object.entries(collections).map(([key, value]) => {
-								if (key === set.collection) {
-									collection_files = collections[key];
+								Object.entries(collections).map(([key, value]) => {
+									if (key === set.collection) {
+										collection_files = collections[key];
+									}
+								});
+
+								return collection_files.map(file => {
+									const slug = decipherSlug(file, set.slug);
+									file.path = path.join(`${set.path}/${slug}`);
+									file.state = !file.state ? set.state : file.state;
+									file.layout = !file.layout ? set.layout : file.layout;
+
+									return file;
+								});
+							}
+
+							// ACTIONS
+							function paginate(set) {
+								// Get files from collections
+								let modifiedFiles = getCollectionFiles(collections, set);
+
+								// SORT
+								if (set.sort) {
+									modifiedFiles = sortCollection(modifiedFiles, set);
 								}
-							});
 
-							return collection_files.map(file => {
-								const slug = decipherSlug(file, set.slug);
-								file.path = path.join(`${set.path}/${slug}`);
-								file.state = !file.state ? set.state : file.state;
-								file.layout = !file.layout ? set.layout : file.layout;
+								modifiedFiles = modifiedFiles.map(file => {
+									file.type = "page";
+									return file;
+								});
 
-								return file;
-							});
-						}
-
-						// ACTIONS
-						function paginate(set) {
-							// Get files from collections
-							let modifiedFiles = getCollectionFiles(collections, set);
-
-							// SORT
-							if (set.sort) {
-								modifiedFiles = sortCollection(modifiedFiles, set);
+								return modifiedFiles;
 							}
 
-							modifiedFiles = modifiedFiles.map(file => {
-								file.type = "page";
-								return file;
-							});
+							function paginateGroups(set) {
+								// Get files from collections
+								let modifiedFiles = getCollectionFiles(collections, set);
 
-							return modifiedFiles;
-						}
+								// SORT
+								if (set.sort) {
+									modifiedFiles = sortCollection(modifiedFiles, set);
+								}
 
-						function paginateGroups(set) {
-							// Get files from collections
-							let modifiedFiles = getCollectionFiles(collections, set);
+								// SIZE
+								if (!set.size) {
+									console.error(`ERROR: You need to set a SIZE for ${set.collection}.`);
+									return;
+								}
 
-							// SORT
-							if (set.sort) {
-								modifiedFiles = sortCollection(modifiedFiles, set);
+								// DEFAULTS
+								// let iterateWith;
+								// let startAt;
+
+								// set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
+								// set.startAt ? startAt = set.startAt : startAt = '';
+
+								function chunkArray(arr, size) {
+									return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
+									: [arr];
+								}
+
+								const chunkedData = chunkArray(modifiedFiles, set.size);
+
+								const newPages = chunkedData.map(arr => {
+									const position = chunkedData.indexOf(arr);
+									const n = chunkedData.length - 1;
+									let pagePath;
+									let hrefsArray = [];
+									let params = {};
+									let pageData = {};
+
+									function iterate(n){
+										if (n !== 0) {
+											hrefsArray.push(`${dirPath}/${n}`);
+											n = n-1;
+											iterate(n);
+										} else {
+											hrefsArray.push(`${dirPath}`);
+											return
+										}
+									}
+
+									position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
+
+									iterate(n);
+
+									hrefsArray.sort();
+
+									if (position !== 0 && position !== n) {
+										params = {
+											next: `${dirPath}/${position + 1}`,
+											previous: `${dirPath}/${position - 1}`,
+											first: `${dirPath}`,
+											last: `${dirPath}/${n}`,
+										}
+
+										pageData = {
+											items: arr,
+											next: chunkedData[position + 1],
+											previous: chunkedData[position - 1],
+											first: chunkedData[0],
+											last: chunkedData[n],
+										}
+									} else if (position === 0) {
+										params = {
+											next: `${dirPath}/${position + 1}`,
+											previous: undefined,
+											first: undefined,
+											last: `${dirPath}/${n}`,
+										}
+
+										pageData = {
+											items: arr,
+											next: chunkedData[position + 1],
+											previous: undefined,
+											first: undefined,
+											last: chunkedData[n],
+										}
+									} else if (position === n) {
+										params = {
+											next: undefined,
+											previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
+											first: `${dirPath}`,
+											last: undefined,
+										}
+
+										pageData = {
+											items: arr,
+											next: undefined,
+											previous: chunkedData[position - 1],
+											first: chunkedData[0],
+											last: undefined,
+										}
+									}
+
+									const newPage = {
+										name: pagePath,
+										path: pagePath,
+										type: 'page',
+										state: set.state,
+										layout: set.layout,
+										meta: set.meta,
+										hrefs: hrefsArray,
+										href: params,
+										pages: chunkedData,
+										page: pageData
+									}
+
+									return newPage;
+								});
+
+								modifiedFiles = newPages;
+
+								return modifiedFiles;
 							}
 
-							// SIZE
-							if (!set.size) {
-								console.error(`ERROR: You need to set a SIZE for ${set.collection}.`);
-								return;
-							}
+							// Use files colllection as base
+							function remedyFiles(array1, array2) {
 
-							// DEFAULTS
-							// let iterateWith;
-							// let startAt;
+								const new_objs = [];
 
-							// set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
-							// set.startAt ? startAt = set.startAt : startAt = '';
+								const updated_files = array1.map(obj1 => {
+									const matching_obj = array2.find(obj2 => obj1.name === obj2.name);
 
-							function chunkArray(arr, size) {
-								return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
-								: [arr];
-							}
-
-							const chunkedData = chunkArray(modifiedFiles, set.size);
-
-							const newPages = chunkedData.map(arr => {
-								const position = chunkedData.indexOf(arr);
-								const n = chunkedData.length - 1;
-								let pagePath;
-								let hrefsArray = [];
-								let params = {};
-								let pageData = {};
-								
-								function iterate(n){
-									if (n !== 0) {
-										hrefsArray.push(`${dirPath}/${n}`);
-										n = n-1;
-										iterate(n);
+									if (matching_obj) {
+										new_objs.push(matching_obj);
 									} else {
-										hrefsArray.push(`${dirPath}`);
+										new_objs.push(obj1)
+									}
+								});
+
+								array2.map(obj2 => {
+									const matching_obj = new_objs.find(obj3 => obj3.name === obj2.name);
+
+									if (matching_obj) {
 										return
+									} else {
+										new_objs.push(obj2)
 									}
-								}
+								})
 
-								position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
+								return new_objs;
+							}
 
-								iterate(n);
-
-								hrefsArray.sort();
-								
-								if (position !== 0 && position !== n) {
-									params = {
-										next: `${dirPath}/${position + 1}`,
-										previous: `${dirPath}/${position - 1}`,
-										first: `${dirPath}`,
-										last: `${dirPath}/${n}`,
-									}
-
-									pageData = {
-										items: arr,
-										next: chunkedData[position + 1],
-										previous: chunkedData[position - 1],
-										first: chunkedData[0],
-										last: chunkedData[n],
-									}
-								} else if (position === 0) {
-									params = {
-										next: `${dirPath}/${position + 1}`,
-										previous: undefined,
-										first: undefined,
-										last: `${dirPath}/${n}`,
-									}
-
-									pageData = {
-										items: arr,
-										next: chunkedData[position + 1],
-										previous: undefined,
-										first: undefined,
-										last: chunkedData[n],
-									}
-								} else if (position === n) {
-									params = {
-										next: undefined,
-										previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
-										first: `${dirPath}`,
-										last: undefined,
-									}
-
-									pageData = {
-										items: arr,
-										next: undefined,
-										previous: chunkedData[position - 1],
-										first: chunkedData[0],
-										last: undefined,
-									}
-								}
-
-								const newPage = {
-									name: pagePath,
-									path: pagePath,
-									type: 'page',
-									state: set.state,
-									layout: set.layout,
-									meta: set.meta,
-									hrefs: hrefsArray,
-									href: params,
-									pages: chunkedData,
-									page: pageData
-								}
-
-								return newPage;
-							});
-
-							modifiedFiles = newPages;
-
-							return modifiedFiles;
+							action === "paginate" ? files = remedyFiles(files, paginate(set))
+							: action === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
+							: throw new Error(`There is no function for "${action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
 						}
 
-						// Use files colllection as base
-						function remedyFiles(array1, array2) {
-
-							const new_objs = [];
-
-							const updated_files = array1.map(obj1 => {
-								const matching_obj = array2.find(obj2 => obj1.name === obj2.name);
-
-								if (matching_obj) {
-									new_objs.push(matching_obj);
-								} else {
-									new_objs.push(obj1)
-								}
+						function runActions(collection) {
+							collection.actions.forEach(action => {
+								runAction(collection, action);
 							});
-
-							array2.map(obj2 => {
-								const matching_obj = new_objs.find(obj3 => obj3.name === obj2.name);
-
-								if (matching_obj) {
-									return
-								} else {
-									new_objs.push(obj2)
-								}
-							})
-
-							return new_objs;
 						}
 
-						action === "paginate" ? files = remedyFiles(files, paginate(set))
-						: action === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
-						: console.error(`ERROR: There is no function for "${action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
-					}
-
-					function runActions(collection) {
-						collection.actions.forEach(action => {
-							runAction(collection, action);
-						});
-					}
-
-					Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection, collection.actions[0])
-					: Array.isArray(collection.actions) && collection.actions.length > 1 ? runActions(collection)
-					: console.error(`ERROR: Your collection "${collection.collection}" must be an Array and contain at least one action.`)
-				})
-			} else if (typeof settings.collect === 'string') {
-				console.error(`ERROR: "collect" in gondola.js must be an Array.`);
+						Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection, collection.actions[0])
+						: Array.isArray(collection.actions) && collection.actions.length > 1 ? runActions(collection)
+						: throw new Error(`Your collection "${collection.collection}" must be an Array and contain at least one action.`)
+					})
+				} else if (typeof settings.collect === 'string') {
+					throw new Error(`"collect" in gondola.js must be an Array.`);
+				}
+			} catch (error) {
+				console.error(error)
 			}
 		}
 
@@ -702,21 +707,22 @@ export function Gondola(dir) {
 				  <channel>
 				    <title>${config.title}</title>
 				    <link>${config.link}</link>
-				    <atom:link href="${config.link}" rel="self" type="application/rss+xml" />
 				    <description>${config.description}</description>
 				    <language>${config.language || "en"}</language>
+				    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+				    <atom:link href="${config.link}" rel="self" type="application/rss+xml" />
 				    ${
 				    feed
-					    .toSorted((a, b) => b.date.getTime() - a.date.getTime())
-					    .map(obj => {
-					    	const title = obj.title;
-					    	const date = new Date(obj.date).toUTCString()
-					    	const link = path.join(`${dir}${obj.path}`);
+					    .toSorted((a, b) => parseDate(b.date, config.dateFormat) - parseDate(a.date, config.dateFormat)
+					    .map(item => {
+					    	const title = item.title;
+					    	const date = parseDate(item.date, config.dateFormat).toUTCString()
+					    	const link = path.join(`${dir}${item.path}`);
 					    	return `
 					    		<item>
 							      <title>${title}</title>
 							      <link>${link}</link>
-							      <description>${obj.description}</description>
+							      <description>${item.description}</description>
 							      <pubDate>${date}</pubDate>
 							      <guid>${link}</guid>
 							    </item>
