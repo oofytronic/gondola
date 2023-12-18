@@ -382,219 +382,215 @@ export function Gondola(dir) {
 
 		// COLLECTION FROM SETTINGS
 		if (settings.collect) {
-			try {
-				if (Array.isArray(settings.collect)) {
-					settings.collect.map(collection => {
-						function runAction(set, action) {
-							const dirPath = set.path;
+			if (Array.isArray(settings.collect)) {
+				settings.collect.map(collection => {
+					function runAction(set, action) {
+						const dirPath = set.path;
 
-							function getCollectionFiles(collections, set) {
-								let collection_files;
+						function getCollectionFiles(collections, set) {
+							let collection_files;
 
-								Object.entries(collections).map(([key, value]) => {
-									if (key === set.collection) {
-										collection_files = collections[key];
-									}
-								});
-
-								return collection_files.map(file => {
-									const slug = decipherSlug(file, set.slug);
-									file.path = path.join(`${set.path}/${slug}`);
-									file.state = !file.state ? set.state : file.state;
-									file.layout = !file.layout ? set.layout : file.layout;
-
-									return file;
-								});
-							}
-
-							// ACTIONS
-							function paginate(set) {
-								// Get files from collections
-								let modifiedFiles = getCollectionFiles(collections, set);
-
-								// SORT
-								if (set.sort) {
-									modifiedFiles = sortCollection(modifiedFiles, set);
+							Object.entries(collections).map(([key, value]) => {
+								if (key === set.collection) {
+									collection_files = collections[key];
 								}
+							});
 
-								modifiedFiles = modifiedFiles.map(file => {
-									file.type = "page";
-									return file;
-								});
+							return collection_files.map(file => {
+								const slug = decipherSlug(file, set.slug);
+								file.path = path.join(`${set.path}/${slug}`);
+								file.state = !file.state ? set.state : file.state;
+								file.layout = !file.layout ? set.layout : file.layout;
 
-								return modifiedFiles;
-							}
-
-							function paginateGroups(set) {
-								// Get files from collections
-								let modifiedFiles = getCollectionFiles(collections, set);
-
-								// SORT
-								if (set.sort) {
-									modifiedFiles = sortCollection(modifiedFiles, set);
-								}
-
-								// SIZE
-								if (!set.size) {
-									console.error(`ERROR: You need to set a SIZE for ${set.collection}.`);
-									return;
-								}
-
-								// DEFAULTS
-								// let iterateWith;
-								// let startAt;
-
-								// set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
-								// set.startAt ? startAt = set.startAt : startAt = '';
-
-								function chunkArray(arr, size) {
-									return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
-									: [arr];
-								}
-
-								const chunkedData = chunkArray(modifiedFiles, set.size);
-
-								const newPages = chunkedData.map(arr => {
-									const position = chunkedData.indexOf(arr);
-									const n = chunkedData.length - 1;
-									let pagePath;
-									let hrefsArray = [];
-									let params = {};
-									let pageData = {};
-
-									function iterate(n){
-										if (n !== 0) {
-											hrefsArray.push(`${dirPath}/${n}`);
-											n = n-1;
-											iterate(n);
-										} else {
-											hrefsArray.push(`${dirPath}`);
-											return
-										}
-									}
-
-									position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
-
-									iterate(n);
-
-									hrefsArray.sort();
-
-									if (position !== 0 && position !== n) {
-										params = {
-											next: `${dirPath}/${position + 1}`,
-											previous: `${dirPath}/${position - 1}`,
-											first: `${dirPath}`,
-											last: `${dirPath}/${n}`,
-										}
-
-										pageData = {
-											items: arr,
-											next: chunkedData[position + 1],
-											previous: chunkedData[position - 1],
-											first: chunkedData[0],
-											last: chunkedData[n],
-										}
-									} else if (position === 0) {
-										params = {
-											next: `${dirPath}/${position + 1}`,
-											previous: undefined,
-											first: undefined,
-											last: `${dirPath}/${n}`,
-										}
-
-										pageData = {
-											items: arr,
-											next: chunkedData[position + 1],
-											previous: undefined,
-											first: undefined,
-											last: chunkedData[n],
-										}
-									} else if (position === n) {
-										params = {
-											next: undefined,
-											previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
-											first: `${dirPath}`,
-											last: undefined,
-										}
-
-										pageData = {
-											items: arr,
-											next: undefined,
-											previous: chunkedData[position - 1],
-											first: chunkedData[0],
-											last: undefined,
-										}
-									}
-
-									const newPage = {
-										name: pagePath,
-										path: pagePath,
-										type: 'page',
-										state: set.state,
-										layout: set.layout,
-										meta: set.meta,
-										hrefs: hrefsArray,
-										href: params,
-										pages: chunkedData,
-										page: pageData
-									}
-
-									return newPage;
-								});
-
-								modifiedFiles = newPages;
-
-								return modifiedFiles;
-							}
-
-							// Use files colllection as base
-							function remedyFiles(array1, array2) {
-
-								const new_objs = [];
-
-								const updated_files = array1.map(obj1 => {
-									const matching_obj = array2.find(obj2 => obj1.name === obj2.name);
-
-									if (matching_obj) {
-										new_objs.push(matching_obj);
-									} else {
-										new_objs.push(obj1)
-									}
-								});
-
-								array2.map(obj2 => {
-									const matching_obj = new_objs.find(obj3 => obj3.name === obj2.name);
-
-									if (matching_obj) {
-										return
-									} else {
-										new_objs.push(obj2)
-									}
-								})
-
-								return new_objs;
-							}
-
-							action === "paginate" ? files = remedyFiles(files, paginate(set))
-							: action === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
-							: throw new Error(`There is no function for "${action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
-						}
-
-						function runActions(collection) {
-							collection.actions.forEach(action => {
-								runAction(collection, action);
+								return file;
 							});
 						}
 
-						Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection, collection.actions[0])
-						: Array.isArray(collection.actions) && collection.actions.length > 1 ? runActions(collection)
-						: throw new Error(`Your collection "${collection.collection}" must be an Array and contain at least one action.`)
-					})
-				} else if (typeof settings.collect === 'string') {
-					throw new Error(`"collect" in gondola.js must be an Array.`);
-				}
-			} catch (error) {
-				console.error(error)
+						// ACTIONS
+						function paginate(set) {
+							// Get files from collections
+							let modifiedFiles = getCollectionFiles(collections, set);
+
+							// SORT
+							if (set.sort) {
+								modifiedFiles = sortCollection(modifiedFiles, set);
+							}
+
+							modifiedFiles = modifiedFiles.map(file => {
+								file.type = "page";
+								return file;
+							});
+
+							return modifiedFiles;
+						}
+
+						function paginateGroups(set) {
+							// Get files from collections
+							let modifiedFiles = getCollectionFiles(collections, set);
+
+							// SORT
+							if (set.sort) {
+								modifiedFiles = sortCollection(modifiedFiles, set);
+							}
+
+							// SIZE
+							if (!set.size) {
+								console.error(`ERROR: You need to set a SIZE for ${set.collection}.`);
+								return;
+							}
+
+							// DEFAULTS
+							// let iterateWith;
+							// let startAt;
+
+							// set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
+							// set.startAt ? startAt = set.startAt : startAt = '';
+
+							function chunkArray(arr, size) {
+								return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
+								: [arr];
+							}
+
+							const chunkedData = chunkArray(modifiedFiles, set.size);
+
+							const newPages = chunkedData.map(arr => {
+								const position = chunkedData.indexOf(arr);
+								const n = chunkedData.length - 1;
+								let pagePath;
+								let hrefsArray = [];
+								let params = {};
+								let pageData = {};
+
+								function iterate(n){
+									if (n !== 0) {
+										hrefsArray.push(`${dirPath}/${n}`);
+										n = n-1;
+										iterate(n);
+									} else {
+										hrefsArray.push(`${dirPath}`);
+										return
+									}
+								}
+
+								position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
+
+								iterate(n);
+
+								hrefsArray.sort();
+
+								if (position !== 0 && position !== n) {
+									params = {
+										next: `${dirPath}/${position + 1}`,
+										previous: `${dirPath}/${position - 1}`,
+										first: `${dirPath}`,
+										last: `${dirPath}/${n}`,
+									}
+
+									pageData = {
+										items: arr,
+										next: chunkedData[position + 1],
+										previous: chunkedData[position - 1],
+										first: chunkedData[0],
+										last: chunkedData[n],
+									}
+								} else if (position === 0) {
+									params = {
+										next: `${dirPath}/${position + 1}`,
+										previous: undefined,
+										first: undefined,
+										last: `${dirPath}/${n}`,
+									}
+
+									pageData = {
+										items: arr,
+										next: chunkedData[position + 1],
+										previous: undefined,
+										first: undefined,
+										last: chunkedData[n],
+									}
+								} else if (position === n) {
+									params = {
+										next: undefined,
+										previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
+										first: `${dirPath}`,
+										last: undefined,
+									}
+
+									pageData = {
+										items: arr,
+										next: undefined,
+										previous: chunkedData[position - 1],
+										first: chunkedData[0],
+										last: undefined,
+									}
+								}
+
+								const newPage = {
+									name: pagePath,
+									path: pagePath,
+									type: 'page',
+									state: set.state,
+									layout: set.layout,
+									meta: set.meta,
+									hrefs: hrefsArray,
+									href: params,
+									pages: chunkedData,
+									page: pageData
+								}
+
+								return newPage;
+							});
+
+							modifiedFiles = newPages;
+
+							return modifiedFiles;
+						}
+
+						// Use files colllection as base
+						function remedyFiles(array1, array2) {
+
+							const new_objs = [];
+
+							const updated_files = array1.map(obj1 => {
+								const matching_obj = array2.find(obj2 => obj1.name === obj2.name);
+
+								if (matching_obj) {
+									new_objs.push(matching_obj);
+								} else {
+									new_objs.push(obj1)
+								}
+							});
+
+							array2.map(obj2 => {
+								const matching_obj = new_objs.find(obj3 => obj3.name === obj2.name);
+
+								if (matching_obj) {
+									return
+								} else {
+									new_objs.push(obj2)
+								}
+							})
+
+							return new_objs;
+						}
+
+						action === "paginate" ? files = remedyFiles(files, paginate(set))
+						: action === "paginateGroups" ? files = remedyFiles(files, paginateGroups(set))
+						: console.error(`Error: There is no function for "${action}". You can create one and pass it through in your settings with "custom: {action: yourAction()}. Default actions offered by Gondola are: [paginate, paginateGroups]`);
+					}
+
+					function runActions(collection) {
+						collection.actions.forEach(action => {
+							runAction(collection, action);
+						});
+					}
+
+					Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection, collection.actions[0])
+					: Array.isArray(collection.actions) && collection.actions.length > 1 ? runActions(collection)
+					: console.error(`Error: Your collection "${collection.collection}" must be an Array and contain at least one action.`)
+				})
+			} else if (typeof settings.collect === 'string') {
+				console.error(`Error: "collect" in gondola.js must be an Array.`);
 			}
 		}
 
