@@ -351,8 +351,6 @@ export function Gondola(dir) {
 			return sortedFiles;
 		}
 
-		// function filterCollection(files, set) {};
-
 		// COLLECTION FROM FILES
 		files
 		.filter(file => file.collections)
@@ -410,122 +408,138 @@ export function Gondola(dir) {
 						// ACTIONS
 						function paginate(set) {
 							// Get files from collections
-							let modified_files = getCollectionFiles(collections, set);
+							let modifiedFiles = getCollectionFiles(collections, set);
 
 							// SORT
 							if (set.sort) {
-								modified_files = sortCollection(modified_files, set);
+								modifiedFiles = sortCollection(modifiedFiles, set);
 							}
 
-							modified_files = modified_files.map(file => {
+							modifiedFiles = modifiedFiles.map(file => {
 								file.type = "page";
 								return file;
 							});
 
-							return modified_files;
+							return modifiedFiles;
 						}
 
 						function paginateGroups(set) {
 							// Get files from collections
-							let modified_files = getCollectionFiles(collections, set);
+							let modifiedFiles = getCollectionFiles(collections, set);
 
 							// SORT
 							if (set.sort) {
-								modified_files = sortCollection(modified_files, set);
+								modifiedFiles = sortCollection(modifiedFiles, set);
 							}
 
 							// SIZE
 							if (!set.size) {
 								console.error(`ERROR: You need to set a SIZE for ${set.collection}.`);
-							} else {
-								// DEFAULTS
-								let iterateWith;
-								let startAt;
-
-								set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
-								set.startAt ? startAt = set.startAt : startAt = '';
-
-								function chunkArray(arr, size) {
-									return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
-									: [arr];
-								}
-
-								const chunked_data = chunkArray(modified_files, set.size);
-
-								const new_pages = chunked_data.map(arr => {
-									const position = chunked_data.indexOf(arr);
-
-
-									// Get page path
-									let pagePath;
-									position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
-
-									// create hrefs
-									let n = chunked_data.length - 1;
-
-									const hrefs = [];
-
-									function iterate(n){
-										if (n !== 0) {
-											hrefs.push(`${dirPath}/${n}`);
-											n = n-1;
-											iterate(n);
-										} else {
-											hrefs.push(`${dirPath}`);
-											return
-										}
-									}
-
-									iterate(n);
-
-									const sortedHrefs = hrefs.sort();
-
-									const lastItem = n;
-									let params = {}
-									if (position !== 0 && position !== lastItem) {
-										params = {
-											next: `${dirPath}/${position + 1}`,
-											previous: `${dirPath}/${position - 1}`,
-											first: `${dirPath}`,
-											last: `${dirPath}/${lastItem}`,
-										}
-									} else if (position === 0) {
-										params = {
-											next: `${dirPath}/${position + 1}`,
-											previous: undefined,
-											first: undefined,
-											last: `${dirPath}/${lastItem}`,
-										}
-									} else if (position === lastItem) {
-										params = {
-											next: undefined,
-											previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
-											first: `${dirPath}`,
-											last: undefined,
-										}
-									}
-
-									const new_page = {
-										name: pagePath,
-										path: pagePath,
-										type: 'page',
-										state: set.state,
-										layout: set.layout,
-										meta: set.meta,
-										data: arr,
-										hrefs: sortedHrefs,
-										href: params
-									}
-
-
-
-									return new_page;
-								});
-
-								modified_files = new_pages;
+								return;
 							}
 
-							return modified_files;
+							// DEFAULTS
+							// let iterateWith;
+							// let startAt;
+
+							// set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
+							// set.startAt ? startAt = set.startAt : startAt = '';
+
+							function chunkArray(arr, size) {
+								return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
+								: [arr];
+							}
+
+							const chunkedData = chunkArray(modifiedFiles, set.size);
+
+							const newPages = chunkedData.map(arr => {
+								const position = chunkedData.indexOf(arr);
+								const n = chunkedData.length - 1;
+								let pagePath;
+								let hrefsArray = [];
+								let params = {};
+								let pageData = {};
+								
+								function iterate(n){
+									if (n !== 0) {
+										hrefsArray.push(`${dirPath}/${n}`);
+										n = n-1;
+										iterate(n);
+									} else {
+										hrefsArray.push(`${dirPath}`);
+										return
+									}
+								}
+
+								position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
+
+								iterate(n);
+
+								hrefsArray.sort();
+								
+								if (position !== 0 && position !== n) {
+									params = {
+										next: `${dirPath}/${position + 1}`,
+										previous: `${dirPath}/${position - 1}`,
+										first: `${dirPath}`,
+										last: `${dirPath}/${n}`,
+									}
+
+									pageData = {
+										next: chunkedData[position + 1],
+										previous: chunkedData[position - 1],
+										first: chunkedData[0],
+										last: chunkedData[n],
+									}
+								} else if (position === 0) {
+									params = {
+										next: `${dirPath}/${position + 1}`,
+										previous: undefined,
+										first: undefined,
+										last: `${dirPath}/${n}`,
+									}
+
+									pageData = {
+										next: chunkedData[position + 1],
+										previous: undefined,
+										first: undefined,
+										last: chunkedData[n],
+									}
+								} else if (position === n) {
+									params = {
+										next: undefined,
+										previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
+										first: `${dirPath}`,
+										last: undefined,
+									}
+
+									pageData = {
+										next: undefined,
+										previous: chunkedData[position - 1],
+										first: chunkedData[0],
+										last: undefined,
+									}
+								}
+
+								const newPage = {
+									name: pagePath,
+									path: pagePath,
+									type: 'page',
+									state: set.state,
+									layout: set.layout,
+									meta: set.meta,
+									hrefs: hrefsArray,
+									href: params,
+									pages: chunkedData,
+									page: pageData
+								}
+
+								return newPage;
+							});
+
+							modifiedFiles = newPages;
+
+							return modifiedFiles;
 						}
 
 						// Use files colllection as base
@@ -567,12 +581,12 @@ export function Gondola(dir) {
 						});
 					}
 
-					typeof collection.actions === 'string' || Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection, collection.actions[0])
-					: Array.isArray(collection.actions) ? runActions(collection)
-					: console.error(`ERROR: Your collection "${collection.collection}" needs at least one action attached to it. If using ONE action, return a string OR an Array with one item. If using MULTIPLE actions, return an Array.`)
+					Array.isArray(collection.actions) && collection.actions.length === 1 ? runAction(collection, collection.actions[0])
+					: Array.isArray(collection.actions) && collection.actions.length > 1 ? runActions(collection)
+					: console.error(`ERROR: Your collection "${collection.collection}" must be an Array and contain at least one action.`)
 				})
 			} else if (typeof settings.collect === 'string') {
-				console.error(`ERROR: "settings.collect" must be an Array.`);
+				console.error(`ERROR: "collect" in gondola.js must be an Array.`);
 			}
 		}
 
