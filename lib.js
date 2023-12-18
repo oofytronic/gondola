@@ -38,6 +38,61 @@ export function Gondola(dir) {
 		return slug;
 	}
 
+	function parseDate(dateString, format) {
+		let dateParts, year, month, day;
+
+		try {
+			if (format === 'EPOCH') {
+				return new Date(parseInt(dateString, 10) * 1000);
+			} else if (format === 'MONTH DAY, YEAR') {
+				dateParts = dateString.split(' ');
+				month = new Date(dateParts[0] + " 1, 2020").getMonth();
+				day = parseInt(dateParts[1].replace(',', ''), 10);
+				year = parseInt(dateParts[2], 10);
+			} else {
+				dateParts = dateString.split(/-|\//);
+
+				if (dateParts.length === 3) {
+					if (format === 'MMDDYYYY') {
+						month = parseInt(dateParts[0], 10) - 1;
+						day = parseInt(dateParts[1], 10);
+						year = parseInt(dateParts[2], 10);
+					} else if (format === 'DDMMYYYY') {
+						day = parseInt(dateParts[0], 10);
+						month = parseInt(dateParts[1], 10) - 1;
+						year = parseInt(dateParts[2], 10);
+					} else if (format === 'YYYYMMDD') {
+						year = parseInt(dateParts[0], 10);
+						month = parseInt(dateParts[1], 10) - 1;
+						day = parseInt(dateParts[2], 10);
+					} else {
+						throw new Error(`Gondola effectively parsed your Date: ${dateString}, but it DOES NOT match any of the supported formats. Your format is ${format}.`);
+					}	
+				} else if (dateParts.length === 1) {
+					if (format === 'MMDDYYYY') {
+						month = parseInt(dateString.substring(0, 2), 10) - 1;
+						day = parseInt(dateString.substring(2, 4), 10);
+						year = parseInt(dateString.substring(4, 8), 10);
+					} else if (format === 'DDMMYYYY') {
+						day = parseInt(dateString.substring(0, 2), 10);
+						month = parseInt(dateString.substring(2, 4), 10) - 1;
+						year = parseInt(dateString.substring(4, 8), 10);
+					} else if (format === 'YYYYMMDD') {
+						year = parseInt(dateString.substring(0, 4), 10);
+						month = parseInt(dateString.substring(4, 6), 10) - 1;
+						day = parseInt(dateString.substring(6, 8), 10);
+					} else {
+						throw new Error(`Gondola effectively parsed your Date: ${dateString}, but it DOES NOT match any of the supported formats. Your format is ${format} and it DOES NOT contain delimiters.`);
+					}
+				}
+			}
+		} catch(error) {
+			console.error(`ERROR: ${error}. Please check Gondola's documentation to ensure your format designation is written correctly. Gondola checks dates for "-" or "/". If it doesn't find these it assumes the string is written without any delimiters.`)
+		}
+
+		return new Date(year, month, day);
+	}
+
 	/** Combines the default settings with user settings **/
 	async function getSettings() {
 		try {
@@ -272,28 +327,27 @@ export function Gondola(dir) {
 
 		// COLLECTION MODS
 		function sortCollection(files, set) {
-			let sorted_files = files.map(file => {
-				if (set.sort.by === "date" || !set.sort.by) {
-					if (set.sort.format === "mmddyyyy" || !set.sort.format) {
-						const dateParts = file.date.split(/-|\//); // - OR /
+			let sorted_files;
+			if (set.sort.by === "date" || !set.sort.by) {
 
-						const month = parseInt(dateParts[0], 10) - 1;
-						const day = parseInt(dateParts[1], 10);
-						const year = parseInt(dateParts[2], 10);
-						file.date = new Date(year, month, day);
-					}
+				sorted_files = set.sort((a, b) => {
+				    const dateA = parseDate(a.date, toUppercase(set.sort.format));
+				    const dateB = parseDate(b.date, toUppercase(set.sort.format));
+				    return dateA - dateB;
+				});
+
+				if (set.sort.order === "newest" || !set.sort.order) {
+					sorted_files = set.toSorted((a, b) => b.date.getTime() - a.date.getTime());
 				}
 
-				return file;
-			})
-
-			if (set.sort.order === "newest" || !set.sort.order) {
-				sorted_files = sorted_files.toSorted((a, b) => b.date.getTime() - a.date.getTime());
+				if (set.sort.order === "oldest") {
+					sorted_files = set.toSorted((a, b) => a.date.getTime() - b.date.getTime());
+				}
 			}
 
-			if (set.sort.order === "oldest") {
-				sorted_files = sorted_files.toSorted((a, b) => a.date.getTime() - b.date.getTime());
-			}
+			if (set.sort.by === "title") {
+			    sorted_files = set.sort((a, b) => a.title.localeCompare(b.title));
+			}	
 
 			return sorted_files;
 		}
@@ -368,14 +422,6 @@ export function Gondola(dir) {
 								file.type = "page";
 								return file;
 							});
-
-							// if (set.replaceGlobal !== false || !set.replaceGlobal) {
-							// 	Object.entries(collections).map(([key, value]) => {
-							// 		if (key === set.name) {
-							// 			collections[key] = modified_files;
-							// 		}
-							// 	});
-							// }
 
 							return modified_files;
 						}
