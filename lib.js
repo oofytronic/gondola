@@ -327,29 +327,28 @@ export function Gondola(dir) {
 
 		// COLLECTION MODS
 		function sortCollection(files, set) {
-			let sorted_files;
+			let sortedFiles;
 			if (set.sort.by === "date" || !set.sort.by) {
-
-				sorted_files = set.sort((a, b) => {
-				    const dateA = parseDate(a.date, toUppercase(set.sort.format));
-				    const dateB = parseDate(b.date, toUppercase(set.sort.format));
+				sortedFiles = set.sort((a, b) => {
+				    const dateA = parseDate(a.date, toUpperCase(set.sort.format));
+				    const dateB = parseDate(b.date, toUpperCase(set.sort.format));
 				    return dateA - dateB;
 				});
 
 				if (set.sort.order === "newest" || !set.sort.order) {
-					sorted_files = set.toSorted((a, b) => b.date.getTime() - a.date.getTime());
+					sortedFiles = set.toSorted((a, b) => b.date.getTime() - a.date.getTime());
 				}
 
 				if (set.sort.order === "oldest") {
-					sorted_files = set.toSorted((a, b) => a.date.getTime() - b.date.getTime());
+					sortedFiles = set.toSorted((a, b) => a.date.getTime() - b.date.getTime());
 				}
 			}
 
 			if (set.sort.by === "title") {
-			    sorted_files = set.sort((a, b) => a.title.localeCompare(b.title));
+			    sortedFiles = set.sort((a, b) => a.title.localeCompare(b.title));
 			}	
 
-			return sorted_files;
+			return sortedFiles;
 		}
 
 		// function filterCollection(files, set) {};
