@@ -326,26 +326,26 @@ export function Gondola(dir) {
 		let collections = {};
 
 		// COLLECTION MODS
-		function sortCollection(files, set) {
+		function sortCollection(setFiles, set) {
 			let sortedFiles;
+
 			if (set.sort.by === "date" || !set.sort.by) {
-				sortedFiles = set.sort((a, b) => {
-				    const dateA = parseDate(a.date, toUpperCase(set.sort.format));
-				    const dateB = parseDate(b.date, toUpperCase(set.sort.format));
-				    return dateA - dateB;
+				sortedFiles = setFiles.sort((a, b) => {
+				    const dateA = parseDate(a.date, set.sort.format.toUpperCase());
+				    const dateB = parseDate(b.date, set.sort.format.toUpperCase());
+
+				    if (set.sort.order === "newest" || !set.sort.order) {
+						return dateB - dateA;
+					}
+
+					if (set.sort.order === "oldest") {
+						return dateA - dateB;
+					}
 				});
-
-				if (set.sort.order === "newest" || !set.sort.order) {
-					sortedFiles = set.toSorted((a, b) => b.date.getTime() - a.date.getTime());
-				}
-
-				if (set.sort.order === "oldest") {
-					sortedFiles = set.toSorted((a, b) => a.date.getTime() - b.date.getTime());
-				}
 			}
 
 			if (set.sort.by === "title") {
-			    sortedFiles = set.sort((a, b) => a.title.localeCompare(b.title));
+			    sortedFiles = setFiles.sort((a, b) => a.title.localeCompare(b.title));
 			}	
 
 			return sortedFiles;
@@ -572,7 +572,7 @@ export function Gondola(dir) {
 					: console.error(`ERROR: Your collection "${collection.collection}" needs at least one action attached to it. If using ONE action, return a string OR an Array with one item. If using MULTIPLE actions, return an Array.`)
 				})
 			} else if (typeof settings.collect === 'string') {
-				console.error(`ERROR: "settings.collect" should be an Array.`);
+				console.error(`ERROR: "settings.collect" must be an Array.`);
 			}
 		}
 
