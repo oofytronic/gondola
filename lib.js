@@ -486,6 +486,7 @@ export function Gondola(dir) {
 									}
 
 									pageData = {
+										items: arr,
 										next: chunkedData[position + 1],
 										previous: chunkedData[position - 1],
 										first: chunkedData[0],
@@ -500,6 +501,7 @@ export function Gondola(dir) {
 									}
 
 									pageData = {
+										items: arr,
 										next: chunkedData[position + 1],
 										previous: undefined,
 										first: undefined,
@@ -514,6 +516,7 @@ export function Gondola(dir) {
 									}
 
 									pageData = {
+										items: arr,
 										next: undefined,
 										previous: chunkedData[position - 1],
 										first: chunkedData[0],
