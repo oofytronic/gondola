@@ -707,9 +707,8 @@ export function Gondola(dir) {
 				    <language>${config.language || "en"}</language>
 				    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 				    <atom:link href="${config.link}" rel="self" type="application/rss+xml" />
-				    ${
-				    feed
-					    .toSorted((a, b) => parseDate(b.date, config.dateFormat) - parseDate(a.date, config.dateFormat)
+				    ${feed
+					    .toSorted((a, b) => parseDate(b.date, config.dateFormat) - parseDate(a.date, config.dateFormat))
 					    .map(item => {
 					    	const title = item.title;
 					    	const date = parseDate(item.date, config.dateFormat).toUTCString()
