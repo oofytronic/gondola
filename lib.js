@@ -712,14 +712,14 @@ export function Gondola(dir) {
 					    .map(item => {
 					    	const title = item.title;
 					    	const date = parseDate(item.date, config.dateFormat).toUTCString()
-					    	const link = path.join(`${dir}${item.path}`);
+					    	const itemLink = path.join(`${config.link}/${item.path}`);
 					    	return `
 					    		<item>
 							      <title>${title}</title>
-							      <link>${link}</link>
+							      <link>${itemLink}</link>
 							      <description>${item.description}</description>
 							      <pubDate>${date}</pubDate>
-							      <guid>${link}</guid>
+							      <guid>${itemLink}</guid>
 							    </item>
 					    	`;
 					    })
