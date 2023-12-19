@@ -796,7 +796,7 @@ export function Gondola(dir) {
 			: feedType === 'ATOM' ? destination = `${settings.output}/feed.atom`
 			: feedType === 'JSONFEED' ? destination = `${settings.output}/feed.json`
 			: console.error(`Could not create path for ${feedType}`)
-			const destination = `${settings.output}/feed.xml`;
+		
 			const destDir = path.parse(destination).dir;
 			fs.mkdirSync(destDir, {recursive: true})
 			fs.writeFileSync(destination, template)
