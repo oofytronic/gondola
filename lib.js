@@ -814,30 +814,36 @@ export function Gondola(dir) {
 	/** Creates the various parts of a simple PWA based on the settings object. **/
 	function setPWA(settings, config) {
 		/*
-			1. Set manifest file from config || look for manifest.json/.webmanifest file
-			2. Look for startup files from config
-			3. Look for icons from config && if only one icon generate multiples and inject in assets folder
-			4. Look for fetch strategy: what to do with new pages accessed
-			5. Look for update strategy: what to do when the app has been updated
-			6. Look for install strategy: If install using button, generate a function that can be attached to any button or link for use in the UI
-			7. Look for extensions: notification boolean...
-			8. Look for custom file that handles pwa functionality
+			- Set manifest file from config || look for manifest.json/.webmanifest file
+			- startup files
+			- fetch strategy: when new pages load
+			- update strategy: when app had been updated
+			- install strategy: button, browser-only
+			- extensions: notifications
 		*/
 
-		// 1
-		try {
-			if (config.manifest) {
-				// make sure name, short_name, theme_color, startURL = '/', at least one icon
-				//  
+		function generateManifest(config) {
+		let manifestData;
+
+			if (typeof config.pwa.manifest === 'string') {
+				// Read manifest data from file
+				const filePath = config.pwa.manifest;
+				manifestData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+			} else if (typeof config.pwa.manifest === 'object') {
+				// Use the object directly
+				manifestData = config.pwa.manifest;
 			} else {
-				// Look for manifest.json OR .webmanifest file
+				throw new Error('Invalid manifest configuration');
 			}
-		} catch (error) {
-			console.error(`Couldn't find Web Manifest.`)
+
+			// Generate manifest.json
+			const manifestJSON = JSON.stringify(manifestData, null, 2);
+			fs.writeFileSync(`${settings.output}/manifest.json`, manifestJSON);
 		}
 
+		generateManifest(config)
 
-		// 3
+
 		/* async function optimizeImage(imagePath, sizes, outputDir) {
 			// Dynamically import sharp
 			const sharp = await import('sharp');
@@ -879,13 +885,6 @@ export function Gondola(dir) {
 				console.error('Error generating PWA icons:', error);
 			}
 		}
-
-
-		// PWA BUILD
-		generatePWAIcons();
-		*/
-
-		console.log(`PWA | Creating ${config.manifest.name}!`)
 	}
 
 	/** Passes through directories and files specified in the settings object. **/
@@ -900,7 +899,7 @@ export function Gondola(dir) {
 	/** Creates a plugin chain for plugins to be used at build time. **/
 	function use(tree, settings) {
 		settings.use.forEach(plugin => {
-			if (plugin.name === "syndication") {
+			if (plugin.plugin === "syndication") {
 				try {
 					const feed = tree.collections[plugin.feed];
 					setSyndication(settings, plugin, feed);
@@ -909,7 +908,7 @@ export function Gondola(dir) {
 				}
 			}
 
-			if (plugin.name === "pwa") {
+			if (plugin.plugin === "pwa") {
 				try {
 					setPWA(settings, plugin);
 				} catch (error) {
