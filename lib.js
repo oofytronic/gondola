@@ -787,15 +787,15 @@ export function Gondola(dir) {
 			    .filter(line => line)  // Remove empty lines
 			    .join('\n');           // Join the lines back together
 
-			return template;
+			return {type, template};
 		}
 
-		function createPage(template) {
+		function createPage({type, template} = {}) {
 			let destination;
-			feedType === 'RSS' ? destination = `${settings.output}/feed.xml`
-			: feedType === 'ATOM' ? destination = `${settings.output}/feed.atom`
-			: feedType === 'JSONFEED' ? destination = `${settings.output}/feed.json`
-			: console.error(`Could not create path for ${feedType}`)
+			type === 'RSS' ? destination = `${settings.output}/feed.xml`
+			: type === 'ATOM' ? destination = `${settings.output}/feed.atom`
+			: type === 'JSONFEED' ? destination = `${settings.output}/feed.json`
+			: console.error(`Could not create path for ${type}`)
 		
 			const destDir = path.parse(destination).dir;
 			fs.mkdirSync(destDir, {recursive: true})
