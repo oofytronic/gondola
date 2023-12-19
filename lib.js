@@ -843,6 +843,7 @@ export function Gondola(dir) {
 
 		generateManifest(config)
 
+		console.log(`WROTE MANIFEST: ${settings.output}/manifest.json`);
 
 		/* async function optimizeImage(imagePath, sizes, outputDir) {
 			// Dynamically import sharp
