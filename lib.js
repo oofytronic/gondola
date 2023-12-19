@@ -839,7 +839,10 @@ export function Gondola(dir) {
 
 			// Generate manifest.json
 			const manifestJSON = JSON.stringify(manifestData, null, 2);
-			fs.writeFileSync(`${settings.appOutput}/manifest.json`, manifestJSON);
+			const destination = `${settings.appOutput}/manifest.json`;
+			const destDir = path.parse(destination).dir;
+			fs.mkdirSync(destDir, {recursive: true})
+			fs.writeFileSync(destination, manifestJSON);
 		}
 
 		generateManifest(config)
