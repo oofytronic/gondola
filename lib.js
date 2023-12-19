@@ -873,7 +873,7 @@ export function Gondola(dir) {
 		generatePWAIcons();
 		*/
 
-		console.log(`PWA | fetch: ${config.sw.fetch}, update: ${config.sw.update}`)
+		console.log(`PWA | Creating ${config.manifest.name}!`)
 	}
 
 	/** Passes through directories and files specified in the settings object. **/
