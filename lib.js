@@ -828,12 +828,12 @@ export function Gondola(dir) {
 		try {
 			if (config.manifest) {
 				// make sure name, short_name, theme_color, startURL = '/', at least one icon
-				// 
+				//  
 			} else {
 				// Look for manifest.json OR .webmanifest file
 			}
 		} catch (error) {
-			console.error()
+			console.error(`Couldn't find Web Manifest.`)
 		}
 
 
