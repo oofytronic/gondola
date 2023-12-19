@@ -824,6 +824,18 @@ export function Gondola(dir) {
 			8. Look for custom file that handles pwa functionality
 		*/
 
+		// 1
+		try {
+			if (config.manifest) {
+				// make sure name, short_name, theme_color, startURL = '/', at least one icon
+				// 
+			} else {
+				// Look for manifest.json OR .webmanifest file
+			}
+		} catch (error) {
+			console.error()
+		}
+
 
 		// 3
 		/* async function optimizeImage(imagePath, sizes, outputDir) {
