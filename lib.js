@@ -100,6 +100,7 @@ export function Gondola(dir) {
 			let defaultSettings = {
 				starter: '',
 				output: '_site',
+				appOutput: '_app',
 				includes: '_includes',
 				components: '_components',
 				drafts: '_drafts',
@@ -838,12 +839,12 @@ export function Gondola(dir) {
 
 			// Generate manifest.json
 			const manifestJSON = JSON.stringify(manifestData, null, 2);
-			fs.writeFileSync(`${settings.output}/manifest.json`, manifestJSON);
+			fs.writeFileSync(`${settings.appOutput}/manifest.json`, manifestJSON);
 		}
 
 		generateManifest(config)
 
-		console.log(`WROTE MANIFEST: ${settings.output}/manifest.json`);
+		console.log(`WROTE MANIFEST: ${settings.appOutput}/manifest.json`);
 
 		/* async function optimizeImage(imagePath, sizes, outputDir) {
 			// Dynamically import sharp
