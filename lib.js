@@ -691,57 +691,124 @@ export function Gondola(dir) {
 
 	/** Creates a RSS feed based on a set collection within the settings object. **/
 	function setSyndication(settings, config, feed) {
-		// LOOK FOR TYPE: RSS, Atom, JSONfeed
-		let template;
+		const feedType = config.feedType;
 
-		if (config.template) {
-			console.log('SYNDICATION: Using your template...')
-		} else {
-			template = `
-				<?xml version="1.0" encoding="utf-8"?>
-				<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xml:base="${config.link}" xmlns:atom="http://www.w3.org/2005/Atom">
-				  <channel>
-				    <title>${config.title}</title>
-				    <link>${config.link}</link>
-				    <description>${config.description}</description>
-				    <language>${config.language || "en"}</language>
-				    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-				    <atom:link href="${config.link}" rel="self" type="application/rss+xml" />
-				    ${feed
-					    .toSorted((a, b) => parseDate(b.date, config.dateFormat) - parseDate(a.date, config.dateFormat))
-					    .map(item => {
-					    	const title = item.title;
-					    	const date = parseDate(item.date, config.dateFormat).toUTCString()
-					    	const itemLink = path.join(`${config.link}/${item.path}`);
-					    	return `
-					    		<item>
-							      <title>${title}</title>
-							      <link>${itemLink}</link>
-							      <description>${item.description}</description>
-							      <pubDate>${date}</pubDate>
-							      <guid>${itemLink}</guid>
-							    </item>
-					    	`;
-					    })
-					    .join('')
-					}
-				  </channel>
-				</rss>
-			`;
+		function assignTemplate(type, config, feed) {
+			let template;
+
+			if (type === 'RSS') {
+				template = `
+					<?xml version="1.0" encoding="utf-8"?>
+					<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xml:base="${config.link}" xmlns:atom="http://www.w3.org/2005/Atom">
+					  <channel>
+					    <title>${config.title}</title>
+					    <link>${config.link}</link>
+					    <description>${config.description}</description>
+					    <language>${config.language || "en"}</language>
+					    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+					    <atom:link href="${config.link}" rel="self" type="application/rss+xml" />
+					    ${feed
+						    .toSorted((a, b) => parseDate(b.date, config.dateFormat) - parseDate(a.date, config.dateFormat))
+						    .map(item => {
+						    	const title = item.title;
+						    	const date = parseDate(item.date, config.dateFormat).toUTCString()
+						    	const itemLink = path.join(`${config.link}/${item.path}`);
+						    	return `
+						    		<item>
+								      <title>${title}</title>
+								      <link>${itemLink}</link>
+								      <description>${item.description}</description>
+								      <pubDate>${date}</pubDate>
+								      <guid>${itemLink}</guid>
+								    </item>
+						    	`;
+						    })
+						    .join('')
+						}
+					  </channel>
+					</rss>
+				`;
+			} else if (type === 'ATOM') {
+			  template = `
+			    <?xml version="1.0" encoding="utf-8"?>
+			    <feed xmlns="http://www.w3.org/2005/Atom">
+			      <title>${config.title}</title>
+			      <link href="${config.link}" rel="self"/>
+			      <updated>${new Date().toISOString()}</updated>
+			      <id>${config.link}</id>
+			      ${feed
+			        .toSorted((a, b) => parseDate(b.date, config.dateFormat) - parseDate(a.date, config.dateFormat))
+			        .map(item => {
+			          const title = item.title;
+			          const date = parseDate(item.date, config.dateFormat).toISOString();
+			          const itemLink = path.join(`${config.link}/${item.path}`);
+			          return `
+			            <entry>
+			              <title>${title}</title>
+			              <link href="${itemLink}"/>
+			              <id>${itemLink}</id>
+			              <updated>${date}</updated>
+			              <summary>${item.description}</summary>
+			            </entry>
+			          `;
+			        })
+			        .join('')
+			      }
+			    </feed>
+			  `;
+			} else if (type === 'JSONFEED') {
+				const items = feed
+			    .toSorted((a, b) => parseDate(b.date, config.dateFormat) - parseDate(a.date, config.dateFormat))
+			    .map(item => {
+			      const title = item.title;
+			      const date = parseDate(item.date, config.dateFormat).toISOString();
+			      const itemLink = path.join(`${config.link}/${item.path}`);
+			      return {
+			        id: itemLink,
+			        url: itemLink,
+			        title: title,
+			        content_text: item.description,
+			        date_published: date
+			      };
+			    });
+
+			  template = JSON.stringify({
+			    version: "https://jsonfeed.org/version/1",
+			    title: config.title,
+			    home_page_url: config.link,
+			    feed_url: `${config.link}/feed.json`,
+			    items: items
+			  }, null, 2); // Pretty print the JSON
+			}
+
+			template = template
+			    .split('\n')           // Split by newline
+			    .map(line => line.trim()) // Trim each line
+			    .filter(line => line)  // Remove empty lines
+			    .join('\n');           // Join the lines back together
+
+			return template;
 		}
 
-		template = template
-		    .split('\n')           // Split by newline
-		    .map(line => line.trim()) // Trim each line
-		    .filter(line => line)  // Remove empty lines
-		    .join('\n');           // Join the lines back together
+		function createPage(template) {
+			let destination;
+			feedType === 'RSS' ? destination = `${settings.output}/feed.xml`
+			: feedType === 'ATOM' ? destination = `${settings.output}/feed.atom`
+			: feedType === 'JSONFEED' ? destination = `${settings.output}/feed.json`
+			: console.error(`Could not create path for ${feedType}`)
+			const destination = `${settings.output}/feed.xml`;
+			const destDir = path.parse(destination).dir;
+			fs.mkdirSync(destDir, {recursive: true})
+			fs.writeFileSync(destination, template)
 
-		const destination = `${settings.output}/feed.xml`;
-		const dest_dir = path.parse(destination).dir;
-		fs.mkdirSync(dest_dir, {recursive: true})
-		fs.writeFileSync(destination, template)
+			console.log(`WROTE: ${destination}`);
+		}
 
-		console.log(`WROTE: ${settings.output}/feed.xml`);
+		if (Array.isArray(feedType)) {
+			feedType.forEach(type => createPage(assignTemplate(type.toUpperCase(), config, feed)))
+		} else {
+			createPage(assignTemplate(feedType.toUpperCase(), config, feed))
+		}
 	}
 
 	/** Creates the various parts of a simple PWA based on the settings object. **/
@@ -823,8 +890,12 @@ export function Gondola(dir) {
 	function use(tree, settings) {
 		settings.use.forEach(plugin => {
 			if (plugin.name === "syndication") {
-				const feed = tree.collections[plugin.feed];
-				setSyndication(settings, plugin, feed);
+				try {
+					const feed = tree.collections[plugin.feed];
+					setSyndication(settings, plugin, feed);
+				} catch (error) {
+					console.error(`Could not create syndication for ${plugin.feed}.`);
+				}
 			}
 
 			if (plugin.name === "pwa") {
