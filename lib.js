@@ -823,15 +823,15 @@ export function Gondola(dir) {
 		*/
 
 		function generateManifest(config) {
-		let manifestData;
+			let manifestData;
 
-			if (typeof config.pwa.manifest === 'string') {
+			if (typeof config.manifest === 'string') {
 				// Read manifest data from file
-				const filePath = config.pwa.manifest;
+				const filePath = config.manifest;
 				manifestData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-			} else if (typeof config.pwa.manifest === 'object') {
+			} else if (typeof config.manifest === 'object') {
 				// Use the object directly
-				manifestData = config.pwa.manifest;
+				manifestData = config.manifest;
 			} else {
 				throw new Error('Invalid manifest configuration');
 			}
