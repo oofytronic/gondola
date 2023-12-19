@@ -884,7 +884,7 @@ export function Gondola(dir) {
 			} catch (error) {
 				console.error('Error generating PWA icons:', error);
 			}
-		}
+		} */
 	}
 
 	/** Passes through directories and files specified in the settings object. **/
