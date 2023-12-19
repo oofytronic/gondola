@@ -873,7 +873,6 @@ export function Gondola(dir) {
 		generatePWAIcons();
 		*/
 
-
 		console.log(`PWA | fetch: ${config.sw.fetch}, update: ${config.sw.update}`)
 	}
 
@@ -894,12 +893,16 @@ export function Gondola(dir) {
 					const feed = tree.collections[plugin.feed];
 					setSyndication(settings, plugin, feed);
 				} catch (error) {
-					console.error(`Could not create syndication for ${plugin.feed}.`);
+					console.error(`Error: Could not create syndication for ${plugin.feed}.`);
 				}
 			}
 
 			if (plugin.name === "pwa") {
-				setPWA(settings, plugin);
+				try {
+					setPWA(settings, plugin);
+				} catch (error) {
+					console.error(`Error: Could not set PWA.`)
+				}
 			}
 		});
 	}
@@ -923,7 +926,7 @@ export function Gondola(dir) {
 			try {
 				use(chain, settings);
 			} catch (error) {
-				console.error(`ERROR using plugins. Check "settings.use"`);
+				console.error(`ERROR using plugins. Check "gondola.js config file"`);
 			}
 		}
 
