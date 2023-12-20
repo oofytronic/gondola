@@ -846,7 +846,156 @@ export function Gondola(dir) {
 			fs.writeFileSync(destination, manifestJSON);
 		}
 
+		function generateFetchStrategy(config) {
+		    let strategyCode = '';
+
+		    switch (config.fetchStrategy) {
+		        case 'CacheFirst':
+		            strategyCode = `
+		                self.addEventListener('fetch', function(event) {
+		                    event.respondWith(
+		                        caches.match(event.request)
+		                            .then(function(response) {
+		                                return response || fetch(event.request);
+		                            })
+		                    );
+		                });
+		            `;
+		            break;
+		        case 'NetworkFirst':
+		            strategyCode = `
+		                self.addEventListener('fetch', function(event) {
+		                    event.respondWith(
+		                        fetch(event.request).catch(function() {
+		                            return caches.match(event.request);
+		                        })
+		                    );
+		                });
+		            `;
+		            break;
+		        case 'CacheOnly':
+		            strategyCode = `
+		                self.addEventListener('fetch', function(event) {
+		                    event.respondWith(caches.match(event.request));
+		                });
+		            `;
+		            break;
+		        case 'NetworkOnly':
+		            strategyCode = `
+		                self.addEventListener('fetch', function(event) {
+		                    event.respondWith(fetch(event.request));
+		                });
+		            `;
+		            break;
+		        case 'StaleWhileRevalidate':
+		            strategyCode = `
+		                self.addEventListener('fetch', function(event) {
+		                    event.respondWith(
+		                        caches.match(event.request)
+		                            .then(function(response) {
+		                                const fetchPromise = fetch(event.request).then(function(networkResponse) {
+		                                    caches.open('dynamic-cache').then(function(cache) {
+		                                        cache.put(event.request, networkResponse.clone());
+		                                        return networkResponse;
+		                                    });
+		                                });
+		                                return response || fetchPromise;
+		                            })
+		                    );
+		                });
+		            `;
+		            break;
+		        default:
+		            throw new Error('Invalid fetch strategy');
+		    }
+
+		    return strategyCode;
+		}
+
+		function generateUpdateStrategy(config) {}
+
+		function generateUpdateStrategy(config) {
+			let strategyCode = '';
+
+			switch (config.updateStrategy) {
+			    case 'autoUpdate':
+			        strategyCode = `
+			            self.addEventListener('fetch', function(event) {
+			                event.respondWith(
+			                    caches.open('dynamic-cache').then(function(cache) {
+			                        return fetch(event.request).then(function(response) {
+			                            cache.put(event.request, response.clone());
+			                            return response;
+			                        });
+			                    })
+			                );
+			            });
+			        `;
+			        break;
+			    case 'onPrompt':
+			        strategyCode = `
+			            self.addEventListener('message', function(event) {
+			                if (event.data.action === 'skipWaiting') {
+			                    self.skipWaiting();
+			                }
+			            });
+
+			            // In your web app, you'll need to prompt the user and then send this message
+			            // navigator.serviceWorker.controller.postMessage({action: 'skipWaiting'});
+			        `;
+			        break;
+			    case 'onTag':
+			        strategyCode = `
+			            self.addEventListener('fetch', function(event) {
+			                if (event.request.headers.get('data-cache') === 'true') {
+			                    event.respondWith(
+			                        caches.open('dynamic-cache').then(function(cache) {
+			                            return fetch(event.request).then(function(response) {
+			                                cache.put(event.request, response.clone());
+			                                return response;
+			                            });
+			                        })
+			                    );
+			                }
+			            });
+			        `;
+			        break;
+			    case 'onRestart':
+			        strategyCode = `
+			            self.addEventListener('activate', function(event) {
+			                event.waitUntil(
+			                    caches.keys().then(function(cacheNames) {
+			                        return Promise.all(
+			                            cacheNames.map(function(cacheName) {
+			                                // Clear out old cache
+			                            })
+			                        );
+			                    })
+			                );
+			            });
+			        `;
+			        break;
+			    default:
+			        throw new Error('Invalid update strategy');
+			}
+
+			return strategyCode;
+		}
+
+
+		function generateServiceWorker(config) {
+			// merge generateFetch and generateUpdate together
+			let strategyTemplates;
+			const strategies = JSON.stringify(strategyTemplates, null, 2);
+			const destination = `${settings.appOutput}/${config.swOutput || 'sw.js'}`;
+			const destDir = path.parse(destination).dir;
+			fs.mkdirSync(destDir, {recursive: true})
+			fs.writeFileSync(destination, manifestJSON);
+		}
+
 		generateManifest(config)
+		generateServiceWorker(config)
+
 
 		console.log(`WROTE MANIFEST: ${settings.appOutput}/manifest.json`);
 
