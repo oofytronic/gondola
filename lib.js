@@ -912,8 +912,6 @@ export function Gondola(dir) {
 		    return strategyCode;
 		}
 
-		function generateUpdateStrategy(config) {}
-
 		function generateUpdateStrategy(config) {
 			let strategyCode = '';
 
@@ -982,9 +980,21 @@ export function Gondola(dir) {
 			return strategyCode;
 		}
 
+		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode, filePath) {
+		    // Read the existing content
+		    let existingContent = '';
+		    if (fs.existsSync(filePath)) {
+		        existingContent = fs.readFileSync(filePath, 'utf8');
+		    }
 
-		function generateServiceWorker(config) {
-			// merge generateFetch and generateUpdate together
+		    // Combine the content
+		    const combinedContent = existingContent + fetchStrategyCode + updateStrategyCode;
+
+		    // Write the combined content to the file
+		    fs.writeFileSync(filePath, combinedContent);
+
+		    ////////////////////////
+
 			let strategyTemplates;
 			const strategies = JSON.stringify(strategyTemplates, null, 2);
 			const destination = `${settings.appOutput}/${config.swOutput || 'sw.js'}`;
@@ -993,8 +1003,12 @@ export function Gondola(dir) {
 			fs.writeFileSync(destination, manifestJSON);
 		}
 
+		const fetchStrategyCode = generateFetchStrategy(config);
+		const updateStrategyCode = generateUpdateStrategy(config);
+		const serviceWorkerFilePath = config.path;
+
 		generateManifest(config)
-		generateServiceWorker(config)
+		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, serviceWorkerFilePath);
 
 
 		console.log(`WROTE MANIFEST: ${settings.appOutput}/manifest.json`);
