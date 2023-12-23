@@ -815,14 +815,6 @@ export function Gondola(dir) {
 
 	/** Creates the various parts of a simple PWA based on the settings object. **/
 	function setPWA(settings, config) {
-		/*
-			- Set manifest file from config || look for manifest.json/.webmanifest file
-			- startup files
-			- fetch strategy: when new pages load
-			- update strategy: when app had been updated
-			- install strategy: button, browser-only
-			- extensions: notifications
-		*/
 
 		function generateManifest(config) {
 			let manifestData;
@@ -844,6 +836,7 @@ export function Gondola(dir) {
 			const destDir = path.parse(destination).dir;
 			fs.mkdirSync(destDir, {recursive: true})
 			fs.writeFileSync(destination, manifestJSON);
+			console.log(`WROTE APP MANIFEST: ${settings.appOutput}/manifest.json`);
 		}
 
 		function generateFetchStrategy(config) {
@@ -980,7 +973,42 @@ export function Gondola(dir) {
 			return strategyCode;
 		}
 
-		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode, filePath) {
+		function generateInstallStrategy(config) {
+			switch (config.installStrategy) {
+			    case 'button':
+			        strategyCode = `
+			            self.addEventListener('fetch', function(event) {
+			                event.respondWith(
+			                    caches.open('dynamic-cache').then(function(cache) {
+			                        return fetch(event.request).then(function(response) {
+			                            cache.put(event.request, response.clone());
+			                            return response;
+			                        });
+			                    })
+			                );
+			            });
+			        `;
+			        break;
+			    case 'browserOnly':
+			        strategyCode = `
+			            self.addEventListener('message', function(event) {
+			                if (event.data.action === 'skipWaiting') {
+			                    self.skipWaiting();
+			                }
+			            });
+
+			            // In your web app, you'll need to prompt the user and then send this message
+			            // navigator.serviceWorker.controller.postMessage({action: 'skipWaiting'});
+			        `;
+			        break;
+			    default:
+			        throw new Error('Invalid update strategy');
+			}
+		}
+
+		function generateExtensions(config) {}
+
+		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, filePath) {
 		    // Read the existing content
 		    let existingContent = '';
 		    if (fs.existsSync(filePath)) {
@@ -988,30 +1016,28 @@ export function Gondola(dir) {
 		    }
 
 		    // Combine the content
-		    const combinedContent = existingContent + fetchStrategyCode + updateStrategyCode;
+		    const combinedContent = existingContent + fetchStrategyCode + updateStrategyCode + installStrategyCode + extensionsCode;
 
 		    // Write the combined content to the file
 		    fs.writeFileSync(filePath, combinedContent);
 
-		    ////////////////////////
-
-			let strategyTemplates;
-			const strategies = JSON.stringify(strategyTemplates, null, 2);
+			const strategies = JSON.stringify(combinedContent, null, 2);
 			const destination = `${settings.appOutput}/${config.swOutput || 'sw.js'}`;
 			const destDir = path.parse(destination).dir;
 			fs.mkdirSync(destDir, {recursive: true})
-			fs.writeFileSync(destination, manifestJSON);
+			fs.writeFileSync(destination, strategies);
+
+			console.log(`WROTE SERVICE WORKER: ${destination}`);
 		}
 
 		const fetchStrategyCode = generateFetchStrategy(config);
 		const updateStrategyCode = generateUpdateStrategy(config);
-		const serviceWorkerFilePath = config.path;
+		const installStrategyCode = generateInstallStrategy(config);
+		const extensionsCode = generateExtensions(config);
+		const serviceWorkerFilePath = config.swOutput || 'sw.js';
 
 		generateManifest(config)
-		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, serviceWorkerFilePath);
-
-
-		console.log(`WROTE MANIFEST: ${settings.appOutput}/manifest.json`);
+		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
 
 		/* async function optimizeImage(imagePath, sizes, outputDir) {
 			// Dynamically import sharp
