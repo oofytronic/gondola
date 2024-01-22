@@ -692,7 +692,7 @@ export function Gondola(dir) {
 	}
 
 	/** Creates a RSS feed based on a set collection within the settings object. **/
-	function setSyndication(settings, config, feed) {
+	function genSyndication(settings, config, feed) {
 		const feedType = config.feedType;
 
 		function assignTemplate(type, config, feed) {
@@ -814,7 +814,7 @@ export function Gondola(dir) {
 	}
 
 	/** Creates the various parts of a simple PWA based on the settings object. **/
-	function setPWA(settings, config) {
+	function genPWA(settings, config) {
 
 		function generateManifest(config) {
 			let manifestData;
@@ -1082,6 +1082,43 @@ export function Gondola(dir) {
 		} */
 	}
 
+	/** Creates a sitemap file based on the output directory **/
+	async function generateSitemap(outputDir, baseUrl) {
+		function getFilesRecursively(directory) {
+			const entries = fs.readdirSync(directory, { withFileTypes: true });
+			let files = [];
+
+			for (let entry of entries) {
+				const entryPath = path.join(directory, entry.name);
+				if (entry.isDirectory()) {
+					files = [...files, ...getFilesRecursively(entryPath)];
+				} else {
+					// Exclude non-HTML files and index.html (handled by parent directory)
+					if (path.extname(entry.name) === '.html' && entry.name !== 'index.html') {
+						files.push(entryPath);
+					}
+				}
+			}
+
+			return files;
+		}
+
+		const files = getFilesRecursively(outputDir);
+
+		const urls = files.map(file => {
+			let relativePath = path.relative(outputDir, file);
+			relativePath = relativePath.replace(/index.html$/, ''); // Remove index.html
+			relativePath = relativePath.replace(/\.html$/, ''); // Remove .html
+			const urlPath = `${baseUrl}/${relativePath}`;
+			return `  <url><loc>${urlPath}</loc></url>`;
+		});
+
+		const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
+		const destination = path.join(outputDir, 'sitemap.xml');
+		fs.writeFileSync(destination, sitemapContent);
+		console.log("WROTE SITEMAP:", destination);
+	}
+
 	/** Passes through directories and files specified in the settings object. **/
 	function pass(settings) {
 		const output = settings.output;
@@ -1110,6 +1147,14 @@ export function Gondola(dir) {
 					console.error(`Error: Could not set PWA.`)
 				}
 			}
+
+			if (plugin.plugin === "sitemap") {
+				try {
+					generateSitemap(settings, plugin, tree);
+				} catch (error) {
+					console.error(`Error: Could not generate sitemap.`);
+				}
+			}
 		});
 	}
 
@@ -1129,11 +1174,15 @@ export function Gondola(dir) {
 
 		// PLUGINS
 		if (settings.use) {
-			try {
-				use(chain, settings);
-			} catch (error) {
-				console.error(`ERROR using plugins. Check "gondola.js config file"`);
-			}
+			settings.use.forEach(plugin => {
+				if (plugin.plugin === "pwa" || plugin.plugin === "syndication" || plugin.timeline == "preBuild") {
+					try {
+						use(chain, settings);
+					} catch (error) {
+						console.error(`ERROR using plugins "preBuild". Check "gondola.js config file"`);
+					}
+				}
+			});
 		}
 
 		// FILES
@@ -1181,6 +1230,17 @@ export function Gondola(dir) {
 			}
 		});
 
+		if (settings.use) {
+			settings.use.forEach(plugin => {
+				if (plugin.plugin === "sitemap" || plugin.timeline == "postBuild") {
+					try {
+						use(files, settings);
+					} catch (error) {
+						console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
+					}
+				}
+			});
+		}
 
 		// PASS
 		if (settings.pass) {
