@@ -1083,7 +1083,7 @@ export function Gondola(dir) {
 	}
 
 	/** Creates a sitemap file based on the output directory **/
-	async function generateSitemap(outputDir, baseUrl) {
+	async function generateSitemap(fileTree, outputDir, baseUrl) {
 	    function getFilesRecursively(directory) {
 	        const entries = fs.readdirSync(directory, { withFileTypes: true });
 	        let files = [];
@@ -1124,10 +1124,16 @@ export function Gondola(dir) {
 
 	    const urls = files.map(file => {
 	        let relativePath = path.relative(outputDir, file.path);
+	        let lastMod;
+	        fileTree.forEach(obj => {
+	        	if (`${outputDir}/${relativePath}` === obj.path) {
+	        		lastMod = obj.modified.toISOString();
+	        	}
+	        });
 	        relativePath = relativePath.replace(/index.html$/, ''); // Remove index.html
 	        relativePath = relativePath.replace(/\.html$/, ''); // Remove .html
 	        const urlPath = `${baseUrl}/${relativePath}`;
-	        const lastMod = file.modified.toISOString();
+	       //const lastMod = file.modified.toISOString();
 	        const priority = determinePriority(relativePath);
 	        return `  <url><loc>${urlPath}</loc><lastmod>${lastMod}</lastmod><priority>${priority}</priority></url>`;
 	    });
@@ -1169,7 +1175,7 @@ export function Gondola(dir) {
 
 			if (plugin.plugin === "sitemap") {
 				try {
-					generateSitemap(settings.output, plugin.baseUrl);
+					generateSitemap(tree, settings.output, plugin.baseUrl);
 				} catch (error) {
 					console.error(`Error: Could not generate sitemap.`);
 				}
@@ -1207,6 +1213,8 @@ export function Gondola(dir) {
 		// FILES
 		const files = chain.files;
 
+		let fileStats = [];
+
 		// OUTPUT
 		files.forEach(file => {
 			if (file.type === 'page') {
@@ -1235,6 +1243,9 @@ export function Gondola(dir) {
 					} else if (settings.coolUrls === false) {
 						destination = `${output}${destinationPath}.html`;
 					}
+
+					// TEMPORARY
+					fileStats.push({path: destination, modified: file.modified});
 					
 					// Create directory and write file
 					const destDir = path.parse(destination).dir;
@@ -1254,7 +1265,7 @@ export function Gondola(dir) {
 			settings.use.forEach(plugin => {
 				if (plugin.plugin === "sitemap" || plugin.timeline == "postBuild") {
 					try {
-						use(files, settings);
+						use(fileStats, settings);
 					} catch (error) {
 						console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
 					}
