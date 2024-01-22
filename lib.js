@@ -1114,7 +1114,7 @@ export function Gondola(dir) {
 		});
 
 		const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-		const destination = path.join(outputDir, 'sitemap.xml');
+		const destinatikon = path.join(outputDir, 'sitemap.xml');
 		fs.writeFileSync(destination, sitemapContent);
 		console.log("WROTE SITEMAP:", destination);
 	}
@@ -1150,7 +1150,7 @@ export function Gondola(dir) {
 
 			if (plugin.plugin === "sitemap") {
 				try {
-					generateSitemap(settings, plugin, tree);
+					generateSitemap(settings.output, plugin.baseUrl);
 				} catch (error) {
 					console.error(`Error: Could not generate sitemap.`);
 				}
@@ -1172,7 +1172,7 @@ export function Gondola(dir) {
 		// CHAIN
 		const chain = await setLayouts(await setTemplates(await setCollections(setData(await getFiles(settings, dir)))));
 
-		// PLUGINS
+		// PLUGINS (PREBUILD)
 		if (settings.use) {
 			settings.use.forEach(plugin => {
 				if (plugin.plugin === "pwa" || plugin.plugin === "syndication" || plugin.timeline == "preBuild") {
@@ -1230,6 +1230,7 @@ export function Gondola(dir) {
 			}
 		});
 
+		// PLUGINS (POSTBUILD)
 		if (settings.use) {
 			settings.use.forEach(plugin => {
 				if (plugin.plugin === "sitemap" || plugin.timeline == "postBuild") {
