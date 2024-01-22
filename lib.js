@@ -1084,39 +1084,58 @@ export function Gondola(dir) {
 
 	/** Creates a sitemap file based on the output directory **/
 	async function generateSitemap(outputDir, baseUrl) {
-		function getFilesRecursively(directory) {
-			const entries = fs.readdirSync(directory, { withFileTypes: true });
-			let files = [];
+	    function getFilesRecursively(directory) {
+	        const entries = fs.readdirSync(directory, { withFileTypes: true });
+	        let files = [];
 
-			for (let entry of entries) {
-				const entryPath = path.join(directory, entry.name);
-				if (entry.isDirectory()) {
-					files = [...files, ...getFilesRecursively(entryPath)];
-				} else {
-					// Exclude non-HTML files and index.html (handled by parent directory)
-					if (path.extname(entry.name) === '.html' && entry.name !== 'index.html') {
-						files.push(entryPath);
-					}
-				}
-			}
+	        for (let entry of entries) {
+	            const entryPath = path.join(directory, entry.name);
+	            if (entry.isDirectory()) {
+	                files = [...files, ...getFilesRecursively(entryPath)];
+	            } else {
+	                // Exclude non-HTML files
+	                if (path.extname(entry.name) === '.html') {
+	                    const stats = fs.statSync(entryPath);
+	                    files.push({
+	                        path: entryPath,
+	                        modified: stats.mtime
+	                    });
+	                }
+	            }
+	        }
 
-			return files;
-		}
+	        return files;
+	    }
 
-		const files = getFilesRecursively(outputDir);
+	    function determinePriority(filePath) {
+	        // Count the depth based on the number of slashes in the relative path
+	        const depth = (filePath.match(new RegExp("/", "g")) || []).length;
+	        
+	        // Assign priority based on depth
+	        switch (depth) {
+	            case 0: return '1.0'; // Root level (e.g., home page)
+	            case 1: return '0.8'; // First level
+	            case 2: return '0.6'; // Second level
+	            default: return '0.5'; // Deeper levels or default
+	        }
+	    }
 
-		const urls = files.map(file => {
-			let relativePath = path.relative(outputDir, file);
-			relativePath = relativePath.replace(/index.html$/, ''); // Remove index.html
-			relativePath = relativePath.replace(/\.html$/, ''); // Remove .html
-			const urlPath = `${baseUrl}/${relativePath}`;
-			return `  <url><loc>${urlPath}</loc></url>`;
-		});
+	    const files = getFilesRecursively(outputDir);
 
-		const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-		const destinatikon = path.join(outputDir, 'sitemap.xml');
-		fs.writeFileSync(destination, sitemapContent);
-		console.log("WROTE SITEMAP:", destination);
+	    const urls = files.map(file => {
+	        let relativePath = path.relative(outputDir, file.path);
+	        relativePath = relativePath.replace(/index.html$/, ''); // Remove index.html
+	        relativePath = relativePath.replace(/\.html$/, ''); // Remove .html
+	        const urlPath = `${baseUrl}/${relativePath}`;
+	        const lastMod = file.modified.toISOString();
+	        const priority = determinePriority(relativePath);
+	        return `  <url><loc>${urlPath}</loc><lastmod>${lastMod}</lastmod><priority>${priority}</priority></url>`;
+	    });
+
+	    const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">\n${urls.join('\n')}\n</urlset>`;
+	    const destination = path.join(outputDir, 'sitemap.xml');
+	    fs.writeFileSync(destination, sitemapContent);
+	    console.log("WROTE SITEMAP:", destination);
 	}
 
 	/** Passes through directories and files specified in the settings object. **/
