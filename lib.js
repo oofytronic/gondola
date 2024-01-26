@@ -1133,10 +1133,14 @@ export function Gondola(dir) {
 	        relativePath = relativePath.replace(/index.html$/, ''); // Remove index.html
 	        relativePath = relativePath.replace(/\.html$/, ''); // Remove .html
 	        const urlPath = `${baseUrl}/${relativePath}`;
-	        const trimmedPath = urlPath.replace(/\/$/, "");
+	        let finalPath;
+			if (urlPath[urlPath.length - 1] !== '/') {
+				finalPath = urlPath += '/'; // Append '/' if it's not there
+			}
+	       //const trimmedPath = urlPath.replace(/\/$/, "");
 	       //const lastMod = file.modified.toISOString();
 	        const priority = determinePriority(relativePath);
-	        return `  <url><loc>${trimmedPath}</loc><lastmod>${lastMod}</lastmod><priority>${priority}</priority></url>`;
+	        return `  <url><loc>${finalPath}</loc><lastmod>${lastMod}</lastmod><priority>${priority}</priority></url>`;
 	    });
 
 	    const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">\n${urls.join('\n')}\n</urlset>`;
