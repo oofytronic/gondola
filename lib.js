@@ -10,8 +10,6 @@ import { serve as bunServe } from 'bun';
 import MarkdownIt from 'markdown-it';
 import * as yamlFront from "yaml-front-matter";
 
-// Comment
-
 export function Gondola(dir) {
 	/** Generates a URL-friendly slug based on specified parameters in a line. **/
 	function decipherSlug(data, line) {

@@ -1,6 +1,6 @@
 {
   "name": "@oofytronic/gondola",
-  "version": "0.0.42",
+  "version": "0.0.8",
   "description": "A lightweight, fast and simple static site and PWA generator made for Bun that aims to remove the complexity of creating websites and web apps while providing a modern developer experience.",
   "bin": {
     "gondola": "main.js"
@@ -29,6 +29,8 @@
     "javascript",
     "pwa",
     "rss",
-    "components"
+    "components",
+    "sitemap",
+    "template literals"
   ]
 }
