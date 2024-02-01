@@ -690,7 +690,8 @@ export function Gondola(dir) {
 	}
 
 	/** Creates a RSS feed based on a set collection within the settings object. **/
-	function genSyndication(settings, config, feed) {
+	function genSyndication(settings, tree, config) {
+		const feed = tree.collections[config.feed];
 		const feedType = config.feedType;
 
 		function assignTemplate(type, config, feed) {
@@ -812,7 +813,7 @@ export function Gondola(dir) {
 	}
 
 	/** Creates the various parts of a simple PWA based on the settings object. **/
-	function genPWA(settings, config) {
+	function genPWA(settings, tree, config) {
 
 		function generateManifest(config) {
 			let manifestData;
@@ -1081,7 +1082,10 @@ export function Gondola(dir) {
 	}
 
 	/** Creates a sitemap file based on the output directory **/
-	async function generateSitemap(fileTree, outputDir, baseUrl) {
+	async function genSitemap(settings, fileTree, plugin) {
+		const outputDir = settings.output;
+		const baseUrl = plugin.baseUrl;
+
 	    function getFilesRecursively(directory) {
 	        const entries = fs.readdirSync(directory, { withFileTypes: true });
 	        let files = [];
@@ -1157,33 +1161,30 @@ export function Gondola(dir) {
 	}
 
 	/** Creates a plugin chain for plugins to be used at build time. **/
-	function use(tree, settings) {
-		settings.use.forEach(plugin => {
-			if (plugin.plugin === "syndication") {
-				try {
-					const feed = tree.collections[plugin.feed];
-					setSyndication(settings, plugin, feed);
-				} catch (error) {
-					console.error(`Error: Could not create syndication for ${plugin.feed}.`);
-				}
+	function use(settings, tree, plugin) {
+		if (plugin.plugin === "syndication") {
+			try {
+				genSyndication(settings, tree, plugin);
+			} catch (error) {
+				console.error(`Error: Could not create syndication for ${plugin.feed}.`);
 			}
+		}
 
-			if (plugin.plugin === "pwa") {
-				try {
-					setPWA(settings, plugin);
-				} catch (error) {
-					console.error(`Error: Could not set PWA.`)
-				}
+		if (plugin.plugin === "pwa") {
+			try {
+				genPWA(settings, tree, plugin);
+			} catch (error) {
+				console.error(`Error: Could not set PWA.`)
 			}
+		}
 
-			if (plugin.plugin === "sitemap") {
-				try {
-					generateSitemap(tree, settings.output, plugin.baseUrl);
-				} catch (error) {
-					console.error(`Error: Could not generate sitemap.`);
-				}
+		if (plugin.plugin === "sitemap") {
+			try {
+				genSitemap(settings, tree, plugin);
+			} catch (error) {
+				console.error(`Error: Could not generate sitemap.`);
 			}
-		});
+		}
 	}
 
 	/** Creates an "output" of directories and files based on the result of a chain of functions. **/
@@ -1205,7 +1206,7 @@ export function Gondola(dir) {
 			settings.use.forEach(plugin => {
 				if (plugin.plugin === "pwa" || plugin.plugin === "syndication" || plugin.timeline == "preBuild") {
 					try {
-						use(chain, settings);
+						use(settings, chain, plugin);
 					} catch (error) {
 						console.error(`ERROR using plugins "preBuild". Check "gondola.js config file"`);
 					}
@@ -1268,7 +1269,7 @@ export function Gondola(dir) {
 			settings.use.forEach(plugin => {
 				if (plugin.plugin === "sitemap" || plugin.timeline == "postBuild") {
 					try {
-						use(fileStats, settings);
+						use(settings, fileStats, plugin);
 					} catch (error) {
 						console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
 					}
