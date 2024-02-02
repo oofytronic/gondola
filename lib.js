@@ -1162,23 +1162,23 @@ export function Gondola(dir) {
 
 	/** Creates a plugin chain for plugins to be used at build time. **/
 	function use(settings, tree, plugin) {
-		if (plugin.plugin === "syndication") {
+		if (plugin.name === "syndication") {
 			try {
 				genSyndication(settings, tree, plugin);
 			} catch (error) {
-				console.error(`Error: Could not create syndication for ${plugin.feed}.`);
+				console.error(`Error: Could not generate syndication for ${plugin.feed}.`);
 			}
 		}
 
-		if (plugin.plugin === "pwa") {
+		if (plugin.name === "pwa") {
 			try {
 				genPWA(settings, tree, plugin);
 			} catch (error) {
-				console.error(`Error: Could not set PWA.`)
+				console.error(`Error: Could not generate PWA.`)
 			}
 		}
 
-		if (plugin.plugin === "sitemap") {
+		if (plugin.name === "sitemap") {
 			try {
 				genSitemap(settings, tree, plugin);
 			} catch (error) {
@@ -1204,7 +1204,7 @@ export function Gondola(dir) {
 		// PLUGINS (PREBUILD)
 		if (settings.use) {
 			settings.use.forEach(plugin => {
-				if (plugin.plugin === "pwa" || plugin.plugin === "syndication" || plugin.timeline == "preBuild") {
+				if (plugin.name === "pwa" || plugin.name === "syndication" || plugin.timeline == "preBuild") {
 					try {
 						use(settings, chain, plugin);
 					} catch (error) {
@@ -1267,7 +1267,7 @@ export function Gondola(dir) {
 		// PLUGINS (POSTBUILD)
 		if (settings.use) {
 			settings.use.forEach(plugin => {
-				if (plugin.plugin === "sitemap" || plugin.timeline == "postBuild") {
+				if (plugin.name === "sitemap" || plugin.timeline == "postBuild") {
 					try {
 						use(settings, fileStats, plugin);
 					} catch (error) {
