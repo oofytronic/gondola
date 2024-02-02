@@ -840,15 +840,13 @@ export function Gondola(dir) {
 						console.log(src, output)
 					}
 				} else {
-					throw New Error('You need to include an array of icons to your manifest OR an object with an image source and output path so Gondola can create the array of icons for you.')
+					throw new Error('You need to include an array of icons to your manifest OR an object with an image source and output path so Gondola can create the array of icons for you.')
 				}
 
 				manifestData = {...defaultManifest, ...userManifest}
 			} else {
 				throw new Error('Invalid manifest configuration');
 			}
-
-			console.log(manifestData)
 
 			// Generate manifest.json
 			const manifestJSON = JSON.stringify(manifestData, null, 2);
