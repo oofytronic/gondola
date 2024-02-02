@@ -844,6 +844,8 @@ export function Gondola(dir) {
 				throw new Error('Invalid manifest configuration');
 			}
 
+			console.log(manifestData)
+
 			// Generate manifest.json
 			const manifestJSON = JSON.stringify(manifestData, null, 2);
 			const destination = `${settings.appOutput}/manifest.json`;
@@ -1044,11 +1046,11 @@ export function Gondola(dir) {
 			console.log(`WROTE SERVICE WORKER: ${destination}`);
 		}
 
-		const fetchStrategyCode = generateFetchStrategy(config);
-		const updateStrategyCode = generateUpdateStrategy(config);
-		const installStrategyCode = generateInstallStrategy(config);
-		const extensionsCode = generateExtensions(config);
-		const serviceWorkerFilePath = config.swOutput || 'sw.js';
+		// const fetchStrategyCode = generateFetchStrategy(config);
+		// const updateStrategyCode = generateUpdateStrategy(config);
+		// const installStrategyCode = generateInstallStrategy(config);
+		// const extensionsCode = generateExtensions(config);
+		// const serviceWorkerFilePath = config.swOutput || 'sw.js';
 
 		generateManifest(config)
 		// writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
