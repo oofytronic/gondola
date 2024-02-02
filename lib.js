@@ -844,6 +844,7 @@ export function Gondola(dir) {
 						const sizes = [48, 72, 96, 128, 144, 152, 192, 256, 384, 512];
 
 						async function resizeAndSaveImage(imagePath, outputDir) {
+
 						  // Dynamically import sharp the first time the function is called
 						  if (!sharp) {
 						    sharp = (await import('sharp')).default;
@@ -861,7 +862,7 @@ export function Gondola(dir) {
 						        .resize(size, size) // Resize the image to each size
 						        .toFile(outputFile); // Save the resized image
 
-						      console.log(`Successfully created: ${outputFile}`);
+						      console.log(`WROTE APP ICON: ${outputFile}`);
 						    } catch (error) {
 						      console.error(`Error resizing image to ${size}x${size}:`, error);
 						    }
@@ -870,6 +871,8 @@ export function Gondola(dir) {
 
 						// Example usage
 						await resizeAndSaveImage(src, output);
+					} else if (Array.isArray(userManifest.icons)) {
+						return;
 					}
 				} else {
 					throw new Error('You need to include an array of icons to your manifest OR an object with an image source and output path so Gondola can create the array of icons for you.')
