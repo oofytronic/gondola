@@ -881,11 +881,10 @@ export function Gondola(dir) {
 			}
 
 			// Generate manifest.json
-			const manifestJSON = JSON.stringify(manifestData, null, 2);
 			const destination = `${settings.appOutput}/manifest.json`;
-			const destDir = path.parse(destination).dir;
-			fs.mkdirSync(destDir, {recursive: true})
-			fs.writeFileSync(destination, manifestJSON);
+		    const destDir = path.parse(destination).dir;
+		    await fs.promises.mkdir(destDir, {recursive: true});
+		    await fs.promises.writeFile(destination, JSON.stringify(manifestData, null, 2));
 			console.log(`WROTE APP MANIFEST: ${settings.appOutput}/manifest.json`);
 		}
 
@@ -1091,7 +1090,7 @@ export function Gondola(dir) {
 	}
 
 	/** Creates a sitemap file based on the output directory **/
-	async function genSitemap(settings, fileTree, plugin) {
+	function genSitemap(settings, fileTree, plugin) {
 		const outputDir = settings.output;
 		const baseUrl = plugin.baseUrl;
 
@@ -1181,7 +1180,7 @@ export function Gondola(dir) {
 
 		if (plugin.name === "pwa") {
 			try {
-				genPWA(settings, tree, plugin);
+				await genPWA(settings, tree, plugin);
 			} catch (error) {
 				console.error(`Error: Could not generate PWA.`)
 			}
