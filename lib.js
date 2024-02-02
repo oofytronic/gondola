@@ -863,7 +863,7 @@ export function Gondola(dir) {
 						}
 
 						// Example usage
-						resizeAndSaveImage('path/to/original/image.png', 'path/to/output/directory');
+						resizeAndSaveImage(src, output);
 					}
 				} else {
 					throw new Error('You need to include an array of icons to your manifest OR an object with an image source and output path so Gondola can create the array of icons for you.')
