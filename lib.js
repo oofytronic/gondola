@@ -1169,7 +1169,7 @@ export function Gondola(dir) {
 	}
 
 	/** Creates a plugin chain for plugins to be used at build time. **/
-	function use(settings, tree, plugin) {
+	async function use(settings, tree, plugin) {
 		if (plugin.name === "syndication") {
 			try {
 				genSyndication(settings, tree, plugin);
@@ -1214,7 +1214,7 @@ export function Gondola(dir) {
 			settings.use.forEach(plugin => {
 				if (plugin.name === "pwa" || plugin.name === "syndication" || plugin.timeline == "preBuild") {
 					try {
-						use(settings, chain, plugin);
+						await use(settings, chain, plugin);
 					} catch (error) {
 						console.error(`ERROR using plugins "preBuild". Check "gondola.js config file"`);
 					}
@@ -1277,7 +1277,7 @@ export function Gondola(dir) {
 			settings.use.forEach(plugin => {
 				if (plugin.name === "sitemap" || plugin.timeline == "postBuild") {
 					try {
-						use(settings, fileStats, plugin);
+						await use(settings, fileStats, plugin);
 					} catch (error) {
 						console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
 					}
