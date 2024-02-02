@@ -836,6 +836,8 @@ export function Gondola(dir) {
 					if (typeof userManifest.icons === 'object') {
 						const src = userManifest.icons.src;
 						const output = userManifest.icons.output;
+						const index = src.lastIndexOf('.');
+						const ext = index > 0 ? src.substring(index + 1) : '';
 
 						let sharp;
 
@@ -847,8 +849,12 @@ export function Gondola(dir) {
 						    sharp = (await import('sharp')).default;
 						  }
 
+							if (!fs.existsSync(outputDir)) {
+								fs.mkdirSync(outputDir, { recursive: true });
+							}
+
 						  for (const size of sizes) {
-						    const outputFile = `${outputDir}/icon-${size}x${size}.png`;
+						    const outputFile = `${outputDir}/icon-${size}x${size}.${ext}`;
 
 						    try {
 						      await sharp(imagePath)
