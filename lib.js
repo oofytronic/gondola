@@ -813,80 +813,55 @@ export function Gondola(dir) {
 	}
 
 	/** Creates the various parts of a simple PWA based on the settings object. **/
-	function genPWA(settings, tree, config) {
+	async function genPWA(settings, tree, config) {
 
-		function generateManifest(config) {
-			let manifestData;
+		async function generateManifest(config) {
+		    let manifestData;
 
-			if (typeof config.manifest === 'string') {
-				// Read manifest data from file
-				const filePath = config.manifest;
-				manifestData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-			} else if (typeof config.manifest === 'object') {
-				let defaultManifest = {
-					startUrl: "/",
-					display: "standalone",
-					themeColor: "#ffffff",
-					backgroundColor: "#000",
-				}
+		    if (typeof config.manifest === 'string') {
+		        // Read manifest data from file
+		        const filePath = config.manifest;
+		        manifestData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+		    } else if (typeof config.manifest === 'object') {
+		        let defaultManifest = {
+		            startUrl: "/",
+		            display: "standalone",
+		            themeColor: "#ffffff",
+		            backgroundColor: "#000",
+		        }
 
-				let userManifest = config.manifest;
+		        let userManifest = config.manifest;
 
-				if (userManifest.icons) {
-					if (typeof userManifest.icons === 'object') {
-						const src = userManifest.icons.src;
-						const output = userManifest.icons.output;
-						const index = src.lastIndexOf('.');
-						const ext = index > 0 ? src.substring(index + 1) : '';
+		        if (userManifest.icons) {
+		            if (typeof userManifest.icons === 'object') {
+		                const src = userManifest.icons.src;
+		                const output = userManifest.icons.output;
+		                const index = src.lastIndexOf('.');
+		                const ext = index > 0 ? src.substring(index + 1) : '';
 
-						let sharp;
+		                let sharp;
 
-						const sizes = [48, 72, 96, 128, 144, 152, 192, 256, 384, 512];
+		                const sizes = [48, 72, 96, 128, 144, 152, 192, 256, 384, 512];
 
-						async function resizeAndSaveImage(imagePath, outputDir) {
-						  // Dynamically import sharp the first time the function is called
-						  if (!sharp) {
-						    sharp = (await import('sharp')).default;
-						  }
+		                // Await the resize and save operation
+		                await resizeAndSaveImage(src, output); // Assuming resizeAndSaveImage is properly adjusted to be async
+		            }
+		        } else {
+		            throw new Error('You need to include an array of icons to your manifest OR an object with an image source and output path so Gondola can create the array of icons for you.')
+		        }
 
-							if (!fs.existsSync(outputDir)) {
-								fs.mkdirSync(outputDir, { recursive: true });
-							}
+		        manifestData = {...defaultManifest, ...userManifest}
+		    } else {
+		        throw new Error('Invalid manifest configuration');
+		    }
 
-						  for (const size of sizes) {
-						    const outputFile = `${outputDir}/icon-${size}x${size}.${ext}`;
-
-						    try {
-						      await sharp(imagePath)
-						        .resize(size, size) // Resize the image to each size
-						        .toFile(outputFile); // Save the resized image
-
-						      console.log(`Successfully created: ${outputFile}`);
-						    } catch (error) {
-						      console.error(`Error resizing image to ${size}x${size}:`, error);
-						    }
-						  }
-						}
-
-						// Example usage
-						await resizeAndSaveImage(src, output);
-					}
-				} else {
-					throw new Error('You need to include an array of icons to your manifest OR an object with an image source and output path so Gondola can create the array of icons for you.')
-				}
-
-				manifestData = {...defaultManifest, ...userManifest}
-			} else {
-				throw new Error('Invalid manifest configuration');
-			}
-
-			// Generate manifest.json
-			const manifestJSON = JSON.stringify(manifestData, null, 2);
-			const destination = `${settings.appOutput}/manifest.json`;
-			const destDir = path.parse(destination).dir;
-			fs.mkdirSync(destDir, {recursive: true})
-			fs.writeFileSync(destination, manifestJSON);
-			console.log(`WROTE APP MANIFEST: ${settings.appOutput}/manifest.json`);
+		    // The rest of your code to generate and write the manifest.json file
+		    // Ensure the directory exists before writing
+		    const destination = `${settings.appOutput}/manifest.json`;
+		    const destDir = path.parse(destination).dir;
+		    await fs.promises.mkdir(destDir, {recursive: true});
+		    await fs.promises.writeFile(destination, JSON.stringify(manifestData, null, 2));
+		    console.log(`WROTE APP MANIFEST: ${destination}`);
 		}
 
 		function generateFetchStrategy(config) {
@@ -1086,7 +1061,7 @@ export function Gondola(dir) {
 		// const extensionsCode = generateExtensions(config);
 		// const serviceWorkerFilePath = config.swOutput || 'sw.js';
 
-		generateManifest(config)
+		await generateManifest(config)
 		// writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
 
 
