@@ -1211,7 +1211,7 @@ export function Gondola(dir) {
 
 		// PLUGINS (PREBUILD)
 		if (settings.use) {
-			settings.use.forEach(plugin => {
+			for (const plugin of settings.use) {
 				if (plugin.name === "pwa" || plugin.name === "syndication" || plugin.timeline == "preBuild") {
 					try {
 						await use(settings, chain, plugin);
@@ -1219,7 +1219,7 @@ export function Gondola(dir) {
 						console.error(`ERROR using plugins "preBuild". Check "gondola.js config file"`);
 					}
 				}
-			});
+			};
 		}
 
 		// FILES
@@ -1274,7 +1274,7 @@ export function Gondola(dir) {
 
 		// PLUGINS (POSTBUILD)
 		if (settings.use) {
-			settings.use.forEach(plugin => {
+			for (const plugin of settings.use) {
 				if (plugin.name === "sitemap" || plugin.timeline == "postBuild") {
 					try {
 						await use(settings, fileStats, plugin);
@@ -1282,7 +1282,7 @@ export function Gondola(dir) {
 						console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
 					}
 				}
-			});
+			};
 		}
 
 		// PASS
