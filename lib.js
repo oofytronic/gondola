@@ -823,8 +823,23 @@ export function Gondola(dir) {
 				const filePath = config.manifest;
 				manifestData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 			} else if (typeof config.manifest === 'object') {
-				// Use the object directly
-				manifestData = config.manifest;
+				let defaultManifest = {
+					startUrl: "/",
+					display: "standalone",
+					themeColor: "#ffffff",
+					backgroundColor: "#000",
+					icons: [
+						{
+							src: "path/to/icon.png",
+							sizes: "192x192",
+							type: "image/png",
+						}
+					]
+				}
+
+				let userManifest = config.manifest;
+
+				manifestData = {...defaultManifest, ...userManifest}
 			} else {
 				throw new Error('Invalid manifest configuration');
 			}
@@ -1036,7 +1051,10 @@ export function Gondola(dir) {
 		const serviceWorkerFilePath = config.swOutput || 'sw.js';
 
 		generateManifest(config)
-		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
+		// writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
+
+
+
 
 		/* async function optimizeImage(imagePath, sizes, outputDir) {
 			// Dynamically import sharp
