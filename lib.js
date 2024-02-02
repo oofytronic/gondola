@@ -828,16 +828,20 @@ export function Gondola(dir) {
 					display: "standalone",
 					themeColor: "#ffffff",
 					backgroundColor: "#000",
-					icons: [
-						{
-							src: "path/to/icon.png",
-							sizes: "192x192",
-							type: "image/png",
-						}
-					]
 				}
 
 				let userManifest = config.manifest;
+
+				if (userManifest.icons) {
+					if (typeof userManifest.icons === 'object') {
+						const src = userManifest.icons.src;
+						const output = userManifest.icons.output;
+
+						console.log(src, output)
+					}
+				} else {
+					throw New Error('You need to include an array of icons to your manifest OR an object with an image source and output path so Gondola can create the array of icons for you.')
+				}
 
 				manifestData = {...defaultManifest, ...userManifest}
 			} else {
