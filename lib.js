@@ -871,6 +871,18 @@ export function Gondola(dir) {
 
 						// Example usage
 						await resizeAndSaveImage(src, output);
+
+						const iconsArray = sizes.map(size => ({
+				            src: `${output}/icon-${size}x${size}.${ext}`, // Assuming `output` is the directory relative to the web root
+				            sizes: `${size}x${size}`,
+				            type: `image/${ext === 'svg' ? 'svg+xml' : ext}` // Handle SVG MIME type correctly
+				        }));
+
+				        // Add or update the icons array in the userManifest object
+				        userManifest.icons = iconsArray;
+
+				        // Combine the default manifest and user manifest again in case icons were added/updated
+				        manifestData = { ...defaultManifest, ...userManifest };
 					} else if (Array.isArray(userManifest.icons)) {
 						return;
 					}
