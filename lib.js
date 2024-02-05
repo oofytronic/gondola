@@ -844,18 +844,19 @@ export function Gondola(dir) {
 						const sizes = [48, 72, 96, 128, 144, 152, 192, 256, 384, 512];
 
 						async function resizeAndSaveImage(imagePath, outputDir) {
+							const fullOutput = `${settings.appOutput}/${outputDir}`;
 
 						  // Dynamically import sharp the first time the function is called
 						  if (!sharp) {
 						    sharp = (await import('sharp')).default;
 						  }
 
-							if (!fs.existsSync(outputDir)) {
-								fs.mkdirSync(outputDir, { recursive: true });
+							if (!fs.existsSync(fullOutput)) {
+								fs.mkdirSync(fullOutput, { recursive: true });
 							}
 
 						  for (const size of sizes) {
-						    const outputFile = `${outputDir}/icon-${size}x${size}.${ext}`;
+						    const outputFile = `${fullOutput}/icon-${size}x${size}.${ext}`;
 
 						    try {
 						      await sharp(imagePath)
