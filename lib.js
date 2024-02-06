@@ -280,6 +280,7 @@ export function Gondola(dir) {
 				.filter(entry => !settings.ignore.includes(entry))
 				.filter(entry => !settings.pass.includes(entry))
 				.filter(entry => entry !== settings.output)
+				.filter(entry => entry !== settings.appOutput)
 				.filter(entry => !entry.startsWith('.'))
 				.map(async entry => {
 					const entryPath = path.join(currentDir, entry);
@@ -1000,22 +1001,6 @@ export function Gondola(dir) {
 			            // navigator.serviceWorker.controller.postMessage({action: 'skipWaiting'});
 			        `;
 			        break;
-			    case 'onTag':
-			        strategyCode = `
-			            self.addEventListener('fetch', function(event) {
-			                if (event.request.headers.get('data-cache') === 'true') {
-			                    event.respondWith(
-			                        caches.open('dynamic-cache').then(function(cache) {
-			                            return fetch(event.request).then(function(response) {
-			                                cache.put(event.request, response.clone());
-			                                return response;
-			                            });
-			                        })
-			                    );
-			                }
-			            });
-			        `;
-			        break;
 			    case 'onRestart':
 			        strategyCode = `
 			            self.addEventListener('activate', function(event) {
@@ -1038,48 +1023,11 @@ export function Gondola(dir) {
 			return strategyCode;
 		}
 
-		function generateInstallStrategy(config) {
-			let strategyCode = '';
-
-			switch (config.installStrategy) {
-			    case 'button':
-			        strategyCode = `
-			            self.addEventListener('fetch', function(event) {
-			                event.respondWith(
-			                    caches.open('dynamic-cache').then(function(cache) {
-			                        return fetch(event.request).then(function(response) {
-			                            cache.put(event.request, response.clone());
-			                            return response;
-			                        });
-			                    })
-			                );
-			            });
-			        `;
-			        break;
-			    case 'browserOnly':
-			        strategyCode = `
-			            self.addEventListener('message', function(event) {
-			                if (event.data.action === 'skipWaiting') {
-			                    self.skipWaiting();
-			                }
-			            });
-
-			            // In your web app, you'll need to prompt the user and then send this message
-			            // navigator.serviceWorker.controller.postMessage({action: 'skipWaiting'});
-			        `;
-			        break;
-			    default:
-			        throw new Error('Invalid update strategy');
-			}
-
-			return strategyCode;
-		}
-
 		function generateExtensions(config) {}
 
-		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode) {
+		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode) {
 		    // Combine the strategy codes
-		    const combinedContent = fetchStrategyCode + updateStrategyCode + installStrategyCode;
+		    const combinedContent = fetchStrategyCode + updateStrategyCode;
 
 		    // Define the destination file path for the service worker
 		    const destination = `${settings.appOutput}/${config.serviceWorker.output || 'sw.js'}`;
@@ -1098,11 +1046,10 @@ export function Gondola(dir) {
 
 		const fetchStrategyCode = generateFetchStrategy(config.serviceWorker);
 		const updateStrategyCode = generateUpdateStrategy(config.serviceWorker);
-		const installStrategyCode = generateInstallStrategy(config.serviceWorker);
 		const extensionsCode = generateExtensions(config.serviceWorker);
 
 		await generateManifest(config)
-		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode);
+		writeToServiceWorker(fetchStrategyCode, updateStrategyCode);
 	}
 
 	/** Creates a sitemap file based on the output directory **/
