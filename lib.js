@@ -908,7 +908,7 @@ export function Gondola(dir) {
 		    let strategyCode = '';
 
 		    switch (config.fetchStrategy) {
-		        case 'CacheFirst':
+		        case 'cacheFirst':
 		            strategyCode = `
 		                self.addEventListener('fetch', function(event) {
 		                    event.respondWith(
@@ -920,7 +920,7 @@ export function Gondola(dir) {
 		                });
 		            `;
 		            break;
-		        case 'NetworkFirst':
+		        case 'networkFirst':
 		            strategyCode = `
 		                self.addEventListener('fetch', function(event) {
 		                    event.respondWith(
@@ -931,21 +931,21 @@ export function Gondola(dir) {
 		                });
 		            `;
 		            break;
-		        case 'CacheOnly':
+		        case 'cacheOnly':
 		            strategyCode = `
 		                self.addEventListener('fetch', function(event) {
 		                    event.respondWith(caches.match(event.request));
 		                });
 		            `;
 		            break;
-		        case 'NetworkOnly':
+		        case 'networkOnly':
 		            strategyCode = `
 		                self.addEventListener('fetch', function(event) {
 		                    event.respondWith(fetch(event.request));
 		                });
 		            `;
 		            break;
-		        case 'StaleWhileRevalidate':
+		        case 'staleWhileRevalidate':
 		            strategyCode = `
 		                self.addEventListener('fetch', function(event) {
 		                    event.respondWith(
@@ -1095,10 +1095,10 @@ export function Gondola(dir) {
 			console.log(`WROTE SERVICE WORKER: ${destination}`);
 		}
 
-		const fetchStrategyCode = generateFetchStrategy(config);
-		const updateStrategyCode = generateUpdateStrategy(config);
-		const installStrategyCode = generateInstallStrategy(config);
-		const extensionsCode = generateExtensions(config);
+		const fetchStrategyCode = generateFetchStrategy(config.serviceWorker);
+		const updateStrategyCode = generateUpdateStrategy(config.serviceWorker);
+		const installStrategyCode = generateInstallStrategy(config.serviceWorker);
+		const extensionsCode = generateExtensions(config.serviceWorker);
 		const serviceWorkerFilePath = config.output || 'sw.js';
 
 		await generateManifest(config)
