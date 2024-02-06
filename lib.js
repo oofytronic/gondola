@@ -1078,25 +1078,22 @@ export function Gondola(dir) {
 		function generateExtensions(config) {}
 
 		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode) {
-		    // Read the existing content
-		    // let existingContent = '';
-		    // if (fs.existsSync(filePath)) {
-		    //     existingContent = fs.readFileSync(filePath, 'utf8');
-		    // }
-
-		    // Combine the content
+		    // Combine the strategy codes
 		    const combinedContent = fetchStrategyCode + updateStrategyCode + installStrategyCode;
 
-		    // Write the combined content to the file
-		    //fs.writeFileSync(filePath, combinedContent);
+		    // Define the destination file path for the service worker
+		    const destination = `${settings.appOutput}/${config.serviceWorker.output || 'sw.js'}`;
 
-			const strategies = JSON.stringify(combinedContent, null, 2);
-			const destination = `${settings.appOutput}/${config.output || 'sw.js'}`;
-			const destDir = path.parse(destination).dir;
-			fs.mkdirSync(destDir, {recursive: true})
-			fs.writeFileSync(destination, strategies);
+		    // Ensure the directory exists before writing the file
+		    const destDir = path.parse(destination).dir;
+		    if (!fs.existsSync(destDir)) {
+		        fs.mkdirSync(destDir, { recursive: true });
+		    }
 
-			console.log(`WROTE SERVICE WORKER: ${destination}`);
+		    // Write the combined content directly to the service worker file
+		    fs.writeFileSync(destination, combinedContent);
+
+		    console.log(`WROTE SERVICE WORKER: ${destination}`);
 		}
 
 		const fetchStrategyCode = generateFetchStrategy(config.serviceWorker);
