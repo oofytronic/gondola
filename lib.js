@@ -1087,7 +1087,7 @@ export function Gondola(dir) {
 		    fs.writeFileSync(filePath, combinedContent);
 
 			const strategies = JSON.stringify(combinedContent, null, 2);
-			const destination = `${settings.appOutput}/${config.swOutput || 'sw.js'}`;
+			const destination = `${settings.appOutput}/${config.output || 'sw.js'}`;
 			const destDir = path.parse(destination).dir;
 			fs.mkdirSync(destDir, {recursive: true})
 			fs.writeFileSync(destination, strategies);
@@ -1095,14 +1095,14 @@ export function Gondola(dir) {
 			console.log(`WROTE SERVICE WORKER: ${destination}`);
 		}
 
-		// const fetchStrategyCode = generateFetchStrategy(config);
-		// const updateStrategyCode = generateUpdateStrategy(config);
-		// const installStrategyCode = generateInstallStrategy(config);
-		// const extensionsCode = generateExtensions(config);
-		// const serviceWorkerFilePath = config.swOutput || 'sw.js';
+		const fetchStrategyCode = generateFetchStrategy(config);
+		const updateStrategyCode = generateUpdateStrategy(config);
+		const installStrategyCode = generateInstallStrategy(config);
+		const extensionsCode = generateExtensions(config);
+		const serviceWorkerFilePath = config.output || 'sw.js';
 
 		await generateManifest(config)
-		// writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
+		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
 	}
 
 	/** Creates a sitemap file based on the output directory **/
