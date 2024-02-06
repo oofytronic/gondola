@@ -794,9 +794,17 @@ export function Gondola(dir) {
 
 		function createPage({type, template} = {}) {
 			let destination;
-			type === 'RSS' ? destination = `${settings.output}/feed.xml`
-			: type === 'ATOM' ? destination = `${settings.output}/feed.atom`
-			: type === 'JSONFEED' ? destination = `${settings.output}/feed.json`
+			let output;
+
+			if (settings.use && settings.use.find(plugin => plugin.name === 'pwa')) {
+				output = settings.appOutput;
+			} else {
+				output = settings.output;
+			}
+
+			type === 'RSS' ? destination = `${output}/feed.xml`
+			: type === 'ATOM' ? destination = `${output}/feed.atom`
+			: type === 'JSONFEED' ? destination = `${output}/feed.json`
 			: console.error(`Could not create path for ${type}`)
 		
 			const destDir = path.parse(destination).dir;
@@ -1054,7 +1062,14 @@ export function Gondola(dir) {
 
 	/** Creates a sitemap file based on the output directory **/
 	function genSitemap(settings, fileTree, plugin) {
-		const outputDir = settings.output;
+		let outputDir;
+
+		if (settings.use && settings.use.find(plugin => plugin.name === 'pwa')) {
+			outputDir = settings.appOutput;
+		} else {
+			outputDir = settings.output;
+		}
+
 		const baseUrl = plugin.baseUrl;
 
 	    function getFilesRecursively(directory) {
@@ -1162,7 +1177,13 @@ export function Gondola(dir) {
 	async function gen() {
 		const start = Date.now();
 		const settings = Object.freeze(await getSettings());
-		const output = settings.output;
+		let output;
+
+		if (settings.use && settings.use.find(plugin => plugin.name === 'pwa')) {
+			output = settings.appOutput;
+		} else {
+			output = settings.output;
+		}
 
 		// CHECK OUTPUT FOLDER
 		fs.existsSync(output) === false ? fs.mkdirSync(output) :
