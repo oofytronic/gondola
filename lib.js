@@ -1077,18 +1077,18 @@ export function Gondola(dir) {
 
 		function generateExtensions(config) {}
 
-		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, filePath) {
+		function writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode) {
 		    // Read the existing content
-		    let existingContent = '';
-		    if (fs.existsSync(filePath)) {
-		        existingContent = fs.readFileSync(filePath, 'utf8');
-		    }
+		    // let existingContent = '';
+		    // if (fs.existsSync(filePath)) {
+		    //     existingContent = fs.readFileSync(filePath, 'utf8');
+		    // }
 
 		    // Combine the content
-		    const combinedContent = existingContent + fetchStrategyCode + updateStrategyCode + installStrategyCode + extensionsCode;
+		    const combinedContent = fetchStrategyCode + updateStrategyCode + installStrategyCode;
 
 		    // Write the combined content to the file
-		    fs.writeFileSync(filePath, combinedContent);
+		    //fs.writeFileSync(filePath, combinedContent);
 
 			const strategies = JSON.stringify(combinedContent, null, 2);
 			const destination = `${settings.appOutput}/${config.output || 'sw.js'}`;
@@ -1103,10 +1103,9 @@ export function Gondola(dir) {
 		const updateStrategyCode = generateUpdateStrategy(config.serviceWorker);
 		const installStrategyCode = generateInstallStrategy(config.serviceWorker);
 		const extensionsCode = generateExtensions(config.serviceWorker);
-		const serviceWorkerFilePath = config.output || 'sw.js';
 
 		await generateManifest(config)
-		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode, extensionsCode, serviceWorkerFilePath);
+		writeToServiceWorker(fetchStrategyCode, updateStrategyCode, installStrategyCode);
 	}
 
 	/** Creates a sitemap file based on the output directory **/
