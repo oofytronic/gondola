@@ -1039,6 +1039,8 @@ export function Gondola(dir) {
 		}
 
 		function generateInstallStrategy(config) {
+			let strategyCode = '';
+
 			switch (config.installStrategy) {
 			    case 'button':
 			        strategyCode = `
@@ -1069,6 +1071,8 @@ export function Gondola(dir) {
 			    default:
 			        throw new Error('Invalid update strategy');
 			}
+
+			return strategyCode;
 		}
 
 		function generateExtensions(config) {}
