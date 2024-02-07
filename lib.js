@@ -164,6 +164,75 @@ export function Gondola(dir) {
 	 * 
 	 **/
 
+	async function getFileReps(settings, baseDir) {
+		let files = [];
+
+		async function createFileObj(filePath, baseDir) {
+			const stats = await fs.promises.stat(filePath);
+			const ext = path.extname(filePath).slice(1);
+			const relativePath = path.relative(baseDir, filePath);
+			const absolutePath = path.resolve(process.cwd(), relativePath);
+
+			let obj = {
+				name: path.basename(filePath),
+				path: relativePath,
+				origin: absolutePath,
+				ext: ext,
+				size: stats.size,
+				created: stats.birthtime,
+				modified: stats.mtime,
+				mode: stats.mode
+			};
+
+			// combines config to obj
+			if (ext === "js") {
+				const {default: defaultFunc} = await import(obj.origin);
+
+				
+				obj.contents = defaultFunc({data: data, collections: collections, context: obj});
+			}
+
+			if (ext === "md") {
+				
+			}
+
+			// Considered data and adds a file.data obj
+			if (ext === "json") {
+			   
+			}
+
+			files.push(obj);
+		}
+
+		async function read(currentDir) {
+			const file_entries = await fs.promises.readdir(currentDir);
+
+			const filtered_entries = file_entries
+				.filter(entry => !settings.ignore.includes(entry))
+				.filter(entry => !settings.pass.includes(entry))
+				.filter(entry => entry !== settings.output)
+				.filter(entry => entry !== settings.appOutput)
+				.filter(entry => !entry.startsWith('.'))
+				.map(async entry => {
+					const entryPath = path.join(currentDir, entry);
+
+					if (fs.existsSync(entryPath)) {
+						const stats = await fs.promises.stat(entryPath);
+
+						if (stats.isDirectory()) {
+							await read(entryPath);
+						} else {
+							await createFileObj(entryPath, baseDir);
+						}
+					}
+				});
+
+			await Promise.all(filtered_entries);
+		}
+
+		await read(baseDir);
+	}
+
 	/** Reads the project "starter" directory and creates file_objects from file information. **/
 	async function getFiles(settings, baseDir) {
 		const files = [];
