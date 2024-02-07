@@ -113,7 +113,8 @@ export function Gondola(dir) {
 					'gondola.js',
 					'package-lock.json'
 				],
-				pass: []
+				pass: [],
+				template: 'contents'
 			};
 
 			let userSettings;
@@ -147,10 +148,21 @@ export function Gondola(dir) {
 		} catch (error) {
 			console.error(`ERROR: Could not get "settings" from "gondola.js". Please make sure the following is addressed:
 				- The function within gondola.js is the 'default' function.
-				- The function returns an object {} with starter, output, includes, drafts, ignore, pass, or data keys in order to overwrite the default settings.
+				- The function returns an object {} with the key/value you'd like to address.
 			`, error);
 		}
 	}
+
+	/**
+	 * async function genFileRep() {}
+	 * Read all qualifying files
+	 * Create base object for each file
+	 * IF file is type data process it (JSON || JS)
+	 * IF file is type collection || settings.collect || file.collections process the collections to Global (JS || MD || JSON)
+	 * IF file is type page process it (JS || MD)
+	 * IF file has custom type process the file as a page, but keep the type
+	 * 
+	 **/
 
 	/** Reads the project "starter" directory and creates file_objects from file information. **/
 	async function getFiles(settings, baseDir) {
@@ -173,7 +185,7 @@ export function Gondola(dir) {
 				mode: stats.mode
 			};
 
-
+			// combines config to obj
 			if (ext === "js") {
 				try {
 		            const importedModule = await import(obj.origin);
@@ -215,6 +227,7 @@ export function Gondola(dir) {
 				}
 			}
 
+			// Considered data and adds a file.data obj
 			if (ext === "json") {
 			    let dataString;
 			    let dataObj;
