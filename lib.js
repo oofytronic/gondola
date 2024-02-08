@@ -155,24 +155,6 @@ export function Gondola(dir) {
 		}
 	}
 
-	async function getGlobalData({settings, files} = {}) {
-		let data = {};
-
-		files.forEach(file => {
-			try {
-				if (file.data) {
-					const dataKey = file.name.split('.')[0];
-
-					data[dataKey] = file.data;
-				}
-			} catch (error) {
-				console.error(`ERROR: Could not get data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);
-			}
-		});
-
-		return {settings, files, data}
-	}
-
 	async function getFileReps(settings, baseDir) {
 		let files = [];
 
@@ -226,6 +208,77 @@ export function Gondola(dir) {
 
 		return {settings, files};
 	}
+
+	async function getGlobalData({settings, files} = {}) {
+	    let data = {};
+	    let unprocessedFiles = [];
+
+	    for (const file of files) {
+	        // Assuming file.path is the full path and we're checking if it's within the data directory
+	        if (file.path.startsWith(settings.data)) {
+	            try {
+	                const filePath = file.path;
+	                const fileName = path.basename(file.path, path.extname(file.path)); // Remove extension
+
+	                // Read and parse JSON file
+	                const fileContents = await fs.promises.readFile(filePath, 'utf8');
+	                const fileData = JSON.parse(fileContents);
+
+	                // Use the filename as the key for the data
+	                data[fileName] = fileData;
+	            } catch (error) {
+	                console.error(`ERROR: Could not get data from ${file.path}. Make sure your data is valid JSON.`, error);
+	                // Add to unprocessedFiles if it fails to process
+	                unprocessedFiles.push(file);
+	            }
+	        } else {
+	            // If the file is not within the data directory, it's considered unprocessed at this stage
+	            unprocessedFiles.push(file);
+	        }
+	    }
+
+	    // Return only the files that haven't been processed as data files
+	    return {settings, files: unprocessedFiles, data};
+	}
+
+	function getCollections({settings, files, data} = {}) {
+	   function getCollectionGroups(settings, files) {
+		   const collections = {};
+
+		    // Filter files that are in the collections directory
+		    files.forEach(file => {
+		        if (file.path.startsWith(`${settings.collections}/`)) {
+		            // Extract the collection name from the path
+		            const pathParts = file.path.split('/');
+		            const collectionName = pathParts[pathParts.indexOf(settings.collections) + 1];
+
+		            if (!collections[collectionName]) {
+		                collections[collectionName] = [];
+		            }
+
+		            collections[collectionName].push(file);
+		        }
+		    });
+
+		    return collections;
+	   }
+
+	   function processCollections(settings, collections) {
+		    settings.collect.forEach(operation => {
+		        const { collectionName, action } = operation; // Assuming operation has these properties
+		        const collectionFiles = collections[collectionName];
+
+		        if (collectionFiles) {
+		            // Apply the operation to collectionFiles
+		            console.log(`Applying ${action} to ${collectionName} collection.`);
+		            // Your processing logic here
+		        }
+		    });
+		}
+
+
+	}
+
 
 
 
@@ -383,24 +436,24 @@ export function Gondola(dir) {
 		return {settings, files};
 	}
 
-	/** Creates a global data object from file data using the name of the file as the key within the object. **/
-	function setData({settings, files} = {}) {
-		let data = {};
+	// /** Creates a global data object from file data using the name of the file as the key within the object. **/
+	// function setData({settings, files} = {}) {
+	// 	let data = {};
 
-		files.forEach(file => {
-			try {
-				if (file.data) {
-					const dataKey = file.name.split('.')[0];
+	// 	files.forEach(file => {
+	// 		try {
+	// 			if (file.data) {
+	// 				const dataKey = file.name.split('.')[0];
 
-					data[dataKey] = file.data;
-				}
-			} catch (error) {
-				console.error(`ERROR: Could not get data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);
-			}
-		});
+	// 				data[dataKey] = file.data;
+	// 			}
+	// 		} catch (error) {
+	// 			console.error(`ERROR: Could not get data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);
+	// 		}
+	// 	});
 
-		return {settings, files, data}
-	}
+	// 	return {settings, files, data}
+	// }
 
 	/** Creates a collection from an action or set of actions and houses them within a global collections object or generates files. **/
 	function setCollections({settings, files, data} = {}) {
