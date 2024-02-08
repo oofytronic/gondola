@@ -269,13 +269,14 @@ export function Gondola(dir) {
 
 		        if (collectionFiles) {
 		            // Apply the operation to collectionFiles
-		            console.log(`Applying ${operation.action} to ${operation.collection} collection.`);
+		            console.log(`Working on ${operation.collection} collection.`);
 		            // Your processing logic here
 		        }
 		    });
 		}
 
-		console.log(getCollectionGroups(settings, files));
+		const groups = getCollectionGroups(settings, files);
+		processCollections(settings, groups);
 	}
 
 
