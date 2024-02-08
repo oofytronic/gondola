@@ -275,7 +275,7 @@ export function Gondola(dir) {
 		    });
 		}
 
-
+		console.log(getCollectionGroups(settings, files));
 	}
 
 
