@@ -158,7 +158,7 @@ export function Gondola(dir) {
 	async function getFileReps(settings, baseDir) {
 		let files = [];
 
-		function createFileObj(filePath, baseDir) {
+		async function createFileObj(filePath, baseDir) {
 			const stats = await fs.promises.stat(filePath);
 			const ext = path.extname(filePath).slice(1);
 			const relativePath = path.relative(baseDir, filePath);
@@ -196,7 +196,7 @@ export function Gondola(dir) {
 						if (stats.isDirectory()) {
 							await read(entryPath);
 						} else {
-							files.push(createFileObj(entryPath, baseDir));
+							files.push(await createFileObj(entryPath, baseDir));
 						}
 					}
 				});
@@ -1435,7 +1435,6 @@ export function Gondola(dir) {
 
 		// CHAIN
 		const chain = getCollections(await getGlobalData(await getFileReps(settings, dir)));
-		console.log(chain)
 
 		// PLUGINS (PREBUILD)
 		// if (settings.use) {
