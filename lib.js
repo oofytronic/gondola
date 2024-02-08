@@ -101,16 +101,18 @@ export function Gondola(dir) {
 				output: '_site',
 				appOutput: '_app',
 				includes: '_includes',
-				components: '_components',
 				drafts: '_drafts',
 				data: '_data',
+				collections: '_collections',
+				configFile: 'config',
+				starterFile: 'index',
 				ignore: [
 					'.git',
 					'.gitignore',
 					'node_modules',
 					'package.json',
 					'bun.lockb',
-					'gondola.js',
+					'gondola.config.js',
 					'package-lock.json'
 				],
 				pass: [],
@@ -120,8 +122,8 @@ export function Gondola(dir) {
 			let userSettings;
 			let joinedSettings = {};
 
-			if (fs.existsSync(path.resolve(dir, 'gondola.js'))) {
-				const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.js'))
+			if (fs.existsSync(path.resolve(dir, 'gondola.config.js'))) {
+				const {default: defaultFunc} = await import(path.resolve(dir, 'gondola.config.js'))
 				userSettings = defaultFunc();
 			} else {
 				userSettings = {};
@@ -146,28 +148,35 @@ export function Gondola(dir) {
 
 			return {...defaultSettings, ...joinedSettings};
 		} catch (error) {
-			console.error(`ERROR: Could not get "settings" from "gondola.js". Please make sure the following is addressed:
-				- The function within gondola.js is the 'default' function.
-				- The function returns an object {} with the key/value you'd like to address.
+			console.error(`ERROR: Could not get "settings" from "gondola.config.js". Please make sure the following is addressed:
+				- The function within gondola.config.js is the 'default' function.
+				- The function returns an object {} with the key/value you'd like to change.
 			`, error);
 		}
 	}
 
-	/**
-	 * async function genFileRep() {}
-	 * Read all qualifying files
-	 * Create base object for each file
-	 * IF file is type data process it (JSON || JS)
-	 * IF file is type collection || settings.collect || file.collections process the collections to Global (JS || MD || JSON)
-	 * IF file is type page process it (JS || MD)
-	 * IF file has custom type process the file as a page, but keep the type
-	 * 
-	 **/
+	async function getGlobalData({settings, files} = {}) {
+		let data = {};
+
+		files.forEach(file => {
+			try {
+				if (file.data) {
+					const dataKey = file.name.split('.')[0];
+
+					data[dataKey] = file.data;
+				}
+			} catch (error) {
+				console.error(`ERROR: Could not get data from ${file.path}. Make sure your data is valid JSON. Gondola uses the filename as the key within the global "data" object.`);
+			}
+		});
+
+		return {settings, files, data}
+	}
 
 	async function getFileReps(settings, baseDir) {
 		let files = [];
 
-		async function createFileObj(filePath, baseDir) {
+		function createFileObj(filePath, baseDir) {
 			const stats = await fs.promises.stat(filePath);
 			const ext = path.extname(filePath).slice(1);
 			const relativePath = path.relative(baseDir, filePath);
@@ -184,24 +193,7 @@ export function Gondola(dir) {
 				mode: stats.mode
 			};
 
-			// combines config to obj
-			if (ext === "js") {
-				const {default: defaultFunc} = await import(obj.origin);
-
-				
-				obj.contents = defaultFunc({data: data, collections: collections, context: obj});
-			}
-
-			if (ext === "md") {
-				
-			}
-
-			// Considered data and adds a file.data obj
-			if (ext === "json") {
-			   
-			}
-
-			files.push(obj);
+			return obj;
 		}
 
 		async function read(currentDir) {
@@ -222,7 +214,7 @@ export function Gondola(dir) {
 						if (stats.isDirectory()) {
 							await read(entryPath);
 						} else {
-							await createFileObj(entryPath, baseDir);
+							files.push(createFileObj(entryPath, baseDir));
 						}
 					}
 				});
@@ -231,7 +223,12 @@ export function Gondola(dir) {
 		}
 
 		await read(baseDir);
+
+		return {settings, files};
 	}
+
+
+
 
 	/** Reads the project "starter" directory and creates file_objects from file information. **/
 	async function getFiles(settings, baseDir) {
