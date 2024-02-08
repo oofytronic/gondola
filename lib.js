@@ -265,12 +265,11 @@ export function Gondola(dir) {
 
 	   function processCollections(settings, collections) {
 		    settings.collect.forEach(operation => {
-		        const { collectionName, action } = operation; // Assuming operation has these properties
-		        const collectionFiles = collections[collectionName];
+		        const collectionFiles = collections[operation.collection];
 
 		        if (collectionFiles) {
 		            // Apply the operation to collectionFiles
-		            console.log(`Applying ${action} to ${collectionName} collection.`);
+		            console.log(`Applying ${operation.action} to ${operation.collection} collection.`);
 		            // Your processing logic here
 		        }
 		    });
@@ -1308,6 +1307,116 @@ export function Gondola(dir) {
 	}
 
 	/** Creates an "output" of directories and files based on the result of a chain of functions. **/
+	// async function gen() {
+	// 	const start = Date.now();
+	// 	const settings = Object.freeze(await getSettings());
+	// 	let output;
+
+	// 	if (settings.use && settings.use.find(plugin => plugin.name === 'pwa')) {
+	// 		output = settings.appOutput;
+	// 	} else {
+	// 		output = settings.output;
+	// 	}
+
+	// 	// CHECK OUTPUT FOLDER
+	// 	fs.existsSync(output) === false ? fs.mkdirSync(output) :
+	// 	!settings.clean ? fs.rmSync(output, { recursive: true, force: true }) :
+	// 	settings.clean === false ? console.log(`GONDOLA: Building into current ${output}`) : console.log('building')
+
+	// 	// CHAIN
+	// 	const chain = await setLayouts(await setTemplates(await setCollections(setData(await getFiles(settings, dir)))));
+
+	// 	// PLUGINS (PREBUILD)
+	// 	if (settings.use) {
+	// 		for (const plugin of settings.use) {
+	// 			if (plugin.name === "pwa" || plugin.name === "syndication" || plugin.timeline == "preBuild") {
+	// 				try {
+	// 					await use(settings, chain, plugin);
+	// 				} catch (error) {
+	// 					console.error(`ERROR using plugins "preBuild". Check "gondola.js config file"`);
+	// 				}
+	// 			}
+	// 		};
+	// 	}
+
+	// 	// FILES
+	// 	const files = chain.files;
+
+	// 	let fileStats = [];
+
+	// 	// OUTPUT
+	// 	files.forEach(file => {
+	// 		if (file.type === 'page') {
+	// 			if (file.state === 'publish') {
+	// 				let destinationPath;
+
+	// 				if (file.path === '' || file.path === 'home.js' || file.path === 'index.js' || file.path === 'index.md' || file.path === 'home.md' || file.path === 'index.json') {
+	// 					destinationPath = '';
+	// 				} else {
+	// 					// Parse the file path to get the directory and name without extension
+	// 					const parsedPath = path.parse(file.path);
+	// 					const directoryPath = parsedPath.dir;
+	// 					const fileNameWithoutExt = parsedPath.name;
+
+	// 					// Construct the destination path
+	// 					destinationPath = path.join(directoryPath, fileNameWithoutExt);
+
+	// 					// Ensure destination path starts with a slash
+	// 					destinationPath = destinationPath.charAt(0) !== '/' ? `/${destinationPath}` : destinationPath;
+	// 				}
+
+	// 				let destination;
+
+	// 				if (!settings.coolUrls) {
+	// 					destination = `${output}${destinationPath}/index.html`;
+	// 				} else if (settings.coolUrls === false) {
+	// 					destination = `${output}${destinationPath}.html`;
+	// 				}
+
+	// 				// TEMPORARY
+	// 				fileStats.push({path: destination, modified: file.modified});
+					
+	// 				// Create directory and write file
+	// 				const destDir = path.parse(destination).dir;
+	// 				fs.mkdirSync(destDir, {recursive: true});
+	// 				fs.writeFileSync(destination, file.contents);
+	// 				console.log("WROTE:", destination);
+	// 			} else if (file.state === 'draft') {
+	// 				console.log(`DRAFT: ${file.name}`);
+	// 			} else if (!file.state) {
+	// 				console.log(`UNDEFINED STATE: ${file.name}`);
+	// 			}
+	// 		}
+	// 	});
+
+	// 	// PLUGINS (POSTBUILD)
+	// 	if (settings.use) {
+	// 		for (const plugin of settings.use) {
+	// 			if (plugin.name === "sitemap" || plugin.timeline == "postBuild") {
+	// 				try {
+	// 					await use(settings, fileStats, plugin);
+	// 				} catch (error) {
+	// 					console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
+	// 				}
+	// 			}
+	// 		};
+	// 	}
+
+	// 	// PASS
+	// 	if (settings.pass) {
+	// 		try {
+	// 			pass(settings);
+	// 		} catch (error) {
+	// 			console.error(`ERROR passing over files and/or directories in settings:`, error);
+	// 		}
+	// 	}
+
+	// 	// END
+	// 	const end = Date.now();
+	// 	const total_time = (end - start) / 1000;
+	// 	console.log(`Built in ${total_time} seconds`);
+	// }
+
 	async function gen() {
 		const start = Date.now();
 		const settings = Object.freeze(await getSettings());
@@ -1325,92 +1434,93 @@ export function Gondola(dir) {
 		settings.clean === false ? console.log(`GONDOLA: Building into current ${output}`) : console.log('building')
 
 		// CHAIN
-		const chain = await setLayouts(await setTemplates(await setCollections(setData(await getFiles(settings, dir)))));
+		const chain = getCollections(await getGlobalData(await getFileReps(settings, dir)));
+		console.log(chain)
 
 		// PLUGINS (PREBUILD)
-		if (settings.use) {
-			for (const plugin of settings.use) {
-				if (plugin.name === "pwa" || plugin.name === "syndication" || plugin.timeline == "preBuild") {
-					try {
-						await use(settings, chain, plugin);
-					} catch (error) {
-						console.error(`ERROR using plugins "preBuild". Check "gondola.js config file"`);
-					}
-				}
-			};
-		}
+		// if (settings.use) {
+		// 	for (const plugin of settings.use) {
+		// 		if (plugin.name === "pwa" || plugin.name === "syndication" || plugin.timeline == "preBuild") {
+		// 			try {
+		// 				await use(settings, chain, plugin);
+		// 			} catch (error) {
+		// 				console.error(`ERROR using plugins "preBuild". Check "gondola.js config file"`);
+		// 			}
+		// 		}
+		// 	};
+		// }
 
 		// FILES
-		const files = chain.files;
+		//const files = chain.files;
 
-		let fileStats = [];
+		// let fileStats = [];
 
-		// OUTPUT
-		files.forEach(file => {
-			if (file.type === 'page') {
-				if (file.state === 'publish') {
-					let destinationPath;
+		// // OUTPUT
+		// files.forEach(file => {
+		// 	if (file.type === 'page') {
+		// 		if (file.state === 'publish') {
+		// 			let destinationPath;
 
-					if (file.path === '' || file.path === 'home.js' || file.path === 'index.js' || file.path === 'index.md' || file.path === 'home.md' || file.path === 'index.json') {
-						destinationPath = '';
-					} else {
-						// Parse the file path to get the directory and name without extension
-						const parsedPath = path.parse(file.path);
-						const directoryPath = parsedPath.dir;
-						const fileNameWithoutExt = parsedPath.name;
+		// 			if (file.path === '' || file.path === 'home.js' || file.path === 'index.js' || file.path === 'index.md' || file.path === 'home.md' || file.path === 'index.json') {
+		// 				destinationPath = '';
+		// 			} else {
+		// 				// Parse the file path to get the directory and name without extension
+		// 				const parsedPath = path.parse(file.path);
+		// 				const directoryPath = parsedPath.dir;
+		// 				const fileNameWithoutExt = parsedPath.name;
 
-						// Construct the destination path
-						destinationPath = path.join(directoryPath, fileNameWithoutExt);
+		// 				// Construct the destination path
+		// 				destinationPath = path.join(directoryPath, fileNameWithoutExt);
 
-						// Ensure destination path starts with a slash
-						destinationPath = destinationPath.charAt(0) !== '/' ? `/${destinationPath}` : destinationPath;
-					}
+		// 				// Ensure destination path starts with a slash
+		// 				destinationPath = destinationPath.charAt(0) !== '/' ? `/${destinationPath}` : destinationPath;
+		// 			}
 
-					let destination;
+		// 			let destination;
 
-					if (!settings.coolUrls) {
-						destination = `${output}${destinationPath}/index.html`;
-					} else if (settings.coolUrls === false) {
-						destination = `${output}${destinationPath}.html`;
-					}
+		// 			if (!settings.coolUrls) {
+		// 				destination = `${output}${destinationPath}/index.html`;
+		// 			} else if (settings.coolUrls === false) {
+		// 				destination = `${output}${destinationPath}.html`;
+		// 			}
 
-					// TEMPORARY
-					fileStats.push({path: destination, modified: file.modified});
+		// 			// TEMPORARY
+		// 			fileStats.push({path: destination, modified: file.modified});
 					
-					// Create directory and write file
-					const destDir = path.parse(destination).dir;
-					fs.mkdirSync(destDir, {recursive: true});
-					fs.writeFileSync(destination, file.contents);
-					console.log("WROTE:", destination);
-				} else if (file.state === 'draft') {
-					console.log(`DRAFT: ${file.name}`);
-				} else if (!file.state) {
-					console.log(`UNDEFINED STATE: ${file.name}`);
-				}
-			}
-		});
+		// 			// Create directory and write file
+		// 			const destDir = path.parse(destination).dir;
+		// 			fs.mkdirSync(destDir, {recursive: true});
+		// 			fs.writeFileSync(destination, file.contents);
+		// 			console.log("WROTE:", destination);
+		// 		} else if (file.state === 'draft') {
+		// 			console.log(`DRAFT: ${file.name}`);
+		// 		} else if (!file.state) {
+		// 			console.log(`UNDEFINED STATE: ${file.name}`);
+		// 		}
+		// 	}
+		// });
 
 		// PLUGINS (POSTBUILD)
-		if (settings.use) {
-			for (const plugin of settings.use) {
-				if (plugin.name === "sitemap" || plugin.timeline == "postBuild") {
-					try {
-						await use(settings, fileStats, plugin);
-					} catch (error) {
-						console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
-					}
-				}
-			};
-		}
+		// if (settings.use) {
+		// 	for (const plugin of settings.use) {
+		// 		if (plugin.name === "sitemap" || plugin.timeline == "postBuild") {
+		// 			try {
+		// 				await use(settings, fileStats, plugin);
+		// 			} catch (error) {
+		// 				console.error(`ERROR using plugins "postBuild". Check "gondola.js config file"`);
+		// 			}
+		// 		}
+		// 	};
+		// }
 
 		// PASS
-		if (settings.pass) {
-			try {
-				pass(settings);
-			} catch (error) {
-				console.error(`ERROR passing over files and/or directories in settings:`, error);
-			}
-		}
+		// if (settings.pass) {
+		// 	try {
+		// 		pass(settings);
+		// 	} catch (error) {
+		// 		console.error(`ERROR passing over files and/or directories in settings:`, error);
+		// 	}
+		// }
 
 		// END
 		const end = Date.now();
