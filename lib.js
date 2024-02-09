@@ -93,7 +93,104 @@ export function Gondola(dir) {
 		return new Date(year, month, day);
 	}
 
-	/** Combines the default settings with user settings **/
+	function processJS(obj) {
+		try {
+			const {default: defaultFunc} = await import(obj.origin);
+			obj.contents = defaultFunc({data: data, collections: collections, context: obj});
+			return obj;
+		} catch (error) {
+			console.error(`ERROR importing default function at ${obj.origin}.`);
+		}
+	}
+
+	function processMD(obj) {
+		let templateObj;
+
+		try {
+			templateObj = yamlFront.loadFront(await Bun.file(obj.origin).text());
+		} catch (error) {
+			console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
+		}
+
+		if (templateObj) {
+			try {
+				const md = new MarkdownIt({
+					html: true
+				});
+
+				// Render Markdown to HTML
+				let rawHtml = md.render(templateObj.__content);
+
+				// Sanitize the HTML
+				templateObj.contents = rawHtml;
+				delete templateObj.__content;
+				obj = {...obj, ...templateObj};
+
+				return obj;
+			} catch (error) {
+				console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
+			}
+		}
+	}
+
+	// NOT READY
+	function processJSON(obj) {
+		if (ext === "json") {
+		    let dataString;
+		    let dataObj;
+
+		    try {
+		        dataString = await Bun.file(obj.path).text();
+		    } catch (error) {
+		        console.error(`ERROR getting text from ${obj.path}.`, error);
+		    }
+
+		    if (dataString) {
+		        try {
+		            dataObj = JSON.parse(dataString);
+
+		            // Process Markdown content in JSON data recursively
+		            const md = new MarkdownIt({ html: true });
+		            function processMarkdownContent(obj) {
+		                if (Array.isArray(obj)) {
+		                    // If it's an array, process each item
+		                    obj.forEach(item => processMarkdownContent(item));
+		                } else if (obj && typeof obj === 'object') {
+		                    // If it's an object, process each key
+		                    for (let key in obj) {
+		                        if (obj.hasOwnProperty(key)) {
+
+		                            // Check for keys ending with '_md'
+		                            if (key.endsWith('_md')) {
+		                                obj[key] = md.render(obj[key]);
+		                            }
+
+		                            // Check for 'g_format' property set to 'markdown'
+		                            if (obj[key] && typeof obj[key] === 'object' && obj[key].g_format === 'markdown' || obj[key].g_format === 'md') {
+		                                obj[key].body = md.render(obj[key].body);
+		                            }
+
+		                            // Recursive call for nested objects and arrays
+		                            processMarkdownContent(obj[key]);
+		                        }
+		                    }
+		                }
+		            }
+
+		            processMarkdownContent(dataObj);
+		        } catch (error) {
+		            console.error(`ERROR parsing JSON from ${obj.path}`, error);
+		        }
+		    }
+
+		    if (dataObj && dataObj.collections) {
+		        obj = {...obj, ...dataObj};
+		    } else {
+		        obj.data = dataObj;
+		    }
+		}
+	}
+
 	async function getSettings() {
 		try {
 			let defaultSettings = {
@@ -268,9 +365,164 @@ export function Gondola(dir) {
 		        const collectionFiles = collections[operation.collection];
 
 		        if (collectionFiles) {
-		            // Apply the operation to collectionFiles
-		            console.log(`Working on ${operation.collection} collection.`);
-		            // Your processing logic here
+		        	function getCollectionFiles(collections, set) {
+						let collection_files;
+
+						Object.entries(collections).map(([key, value]) => {
+							if (key === set.collection) {
+								collection_files = collections[key];
+							}
+						});
+
+						return collection_files.map(file => {
+							const slug = decipherSlug(file, set.slug);
+							file.path = path.join(`${set.path}/${slug}`);
+							file.state = !file.state ? set.state : file.state;
+							file.layout = !file.layout ? set.layout : file.layout;
+
+							return file;
+						});
+					}
+
+					// ACTIONS
+					function paginate(set) {
+						// Get files from collections
+						let modifiedFiles = getCollectionFiles(collections, set);
+
+						// SORT
+						if (set.sort) {
+							modifiedFiles = sortCollection(modifiedFiles, set);
+						}
+
+						modifiedFiles = modifiedFiles.map(file => {
+							file.type = "page";
+							return file;
+						});
+
+						return modifiedFiles;
+					}
+
+					function paginateGroups(set) {
+						// Get files from collections
+						let modifiedFiles = getCollectionFiles(collections, set);
+
+						// SORT
+						if (set.sort) {
+							modifiedFiles = sortCollection(modifiedFiles, set);
+						}
+
+						// SIZE
+						if (!set.size) {
+							console.error(`ERROR: You need to set a SIZE for ${set.collection}.`);
+							return;
+						}
+
+						// DEFAULTS
+						// let iterateWith;
+						// let startAt;
+
+						// set.iterateWith ? iterateWith = set.iterateWith : iterateWith = 'number';
+						// set.startAt ? startAt = set.startAt : startAt = '';
+
+						function chunkArray(arr, size) {
+							return arr.length > size ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
+							: [arr];
+						}
+
+						const chunkedData = chunkArray(modifiedFiles, set.size);
+
+						const newPages = chunkedData.map(arr => {
+							const position = chunkedData.indexOf(arr);
+							const n = chunkedData.length - 1;
+							let pagePath;
+							let hrefsArray = [];
+							let params = {};
+							let pageData = {};
+
+							function iterate(n){
+								if (n !== 0) {
+									hrefsArray.push(`${dirPath}/${n}`);
+									n = n-1;
+									iterate(n);
+								} else {
+									hrefsArray.push(`${dirPath}`);
+									return
+								}
+							}
+
+							position === 0 ? pagePath = `${dirPath}` : pagePath = `${dirPath}/${position}`;
+
+							iterate(n);
+
+							hrefsArray.sort();
+
+							if (position !== 0 && position !== n) {
+								params = {
+									next: `${dirPath}/${position + 1}`,
+									previous: `${dirPath}/${position - 1}`,
+									first: `${dirPath}`,
+									last: `${dirPath}/${n}`,
+								}
+
+								pageData = {
+									items: arr,
+									next: chunkedData[position + 1],
+									previous: chunkedData[position - 1],
+									first: chunkedData[0],
+									last: chunkedData[n],
+								}
+							} else if (position === 0) {
+								params = {
+									next: `${dirPath}/${position + 1}`,
+									previous: undefined,
+									first: undefined,
+									last: `${dirPath}/${n}`,
+								}
+
+								pageData = {
+									items: arr,
+									next: chunkedData[position + 1],
+									previous: undefined,
+									first: undefined,
+									last: chunkedData[n],
+								}
+							} else if (position === n) {
+								params = {
+									next: undefined,
+									previous: `${position === 1 ? `${dirPath}` : `/${position - 1}`}`,
+									first: `${dirPath}`,
+									last: undefined,
+								}
+
+								pageData = {
+									items: arr,
+									next: undefined,
+									previous: chunkedData[position - 1],
+									first: chunkedData[0],
+									last: undefined,
+								}
+							}
+
+							const newPage = {
+								name: pagePath,
+								path: pagePath,
+								type: 'page',
+								state: set.state,
+								layout: set.layout,
+								meta: set.meta,
+								hrefs: hrefsArray,
+								href: params,
+								pages: chunkedData,
+								page: pageData
+							}
+
+							return newPage;
+						});
+
+						modifiedFiles = newPages;
+
+						return modifiedFiles;
+					}
 		        }
 		    });
 		}
@@ -730,53 +982,53 @@ export function Gondola(dir) {
 		return {settings, files, data, collections}
 	}
 
-	/** Creates a contents key/value pair within the file object that houses the template for that file. **/
-	function setTemplates({settings, files, data, collections} = {}) {
-		return Promise.all(files.map(async obj => {
-				if (obj.ext === "js" && obj.type !== "layout") {
-					try {
-						const {default: defaultFunc} = await import(obj.origin);
-						obj.contents = defaultFunc({data: data, collections: collections, context: obj});
-					} catch (error) {
-						console.error(`ERROR importing default function at ${obj.origin}.`);
-					}
-				}
+	// /** Creates a contents key/value pair within the file object that houses the template for that file. **/
+	// function setTemplates({settings, files, data, collections} = {}) {
+	// 	return Promise.all(files.map(async obj => {
+	// 			if (obj.ext === "js" && obj.type !== "layout") {
+	// 				try {
+	// 					const {default: defaultFunc} = await import(obj.origin);
+	// 					obj.contents = defaultFunc({data: data, collections: collections, context: obj});
+	// 				} catch (error) {
+	// 					console.error(`ERROR importing default function at ${obj.origin}.`);
+	// 				}
+	// 			}
 
 
-				if (obj.ext === "md") {
-					let templateObj;
+	// 			if (obj.ext === "md") {
+	// 				let templateObj;
 
-					try {
-						templateObj = yamlFront.loadFront(await Bun.file(obj.origin).text());
-					} catch (error) {
-						console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
-					}
+	// 				try {
+	// 					templateObj = yamlFront.loadFront(await Bun.file(obj.origin).text());
+	// 				} catch (error) {
+	// 					console.error(`ERROR parsing YAML front matter at ${obj.origin}:`, error);
+	// 				}
 
-					if (templateObj) {
-						try {
-							const md = new MarkdownIt({
-								html: true
-							});
+	// 				if (templateObj) {
+	// 					try {
+	// 						const md = new MarkdownIt({
+	// 							html: true
+	// 						});
 
-							// Render Markdown to HTML
-							let rawHtml = md.render(templateObj.__content);
+	// 						// Render Markdown to HTML
+	// 						let rawHtml = md.render(templateObj.__content);
 
-							// Sanitize the HTML
-							templateObj.contents = rawHtml;
-							delete templateObj.__content;
-							obj = {...obj, ...templateObj};
-						} catch (error) {
-							console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
-						}
-					}
-				}
+	// 						// Sanitize the HTML
+	// 						templateObj.contents = rawHtml;
+	// 						delete templateObj.__content;
+	// 						obj = {...obj, ...templateObj};
+	// 					} catch (error) {
+	// 						console.error(`ERROR parsing Markdown at ${obj.origin}:`, error);
+	// 					}
+	// 				}
+	// 			}
 
-				return obj;
-			})
-		).then(files => {
-			return {settings, files, data, collections}
-		})
-	}
+	// 			return obj;
+	// 		})
+	// 	).then(files => {
+	// 		return {settings, files, data, collections}
+	// 	})
+	// }
 
 	/** Creates an html layout which typically houses the contents of specified file object. **/
 	async function setLayouts({settings, files, data, collections} = {}) {
